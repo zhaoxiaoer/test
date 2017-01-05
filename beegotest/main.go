@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"beegotest/admin"
-	"beegotest/controllers"
-	"beegotest/proemulator"
+	"./admin"
+	"./controllers"
+	"./proemulator"
 
 	"github.com2/astaxie/beego"
 	//	"gopkg.in/mgo.v2-unstable"
