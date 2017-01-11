@@ -46,6 +46,40 @@ func main() {
 	r, _ = regexp.Compile(".*he")
 	fmt.Println(r.LiteralPrefix()) // "" false
 
+	// 返回正则表达式中捕获分组的个数（某些分组为不捕获分组）
+	reg = regexp.MustCompile(`h(e.*)o wo(\w)d`)
+	fmt.Println(reg.NumSubexp()) // 2
+	reg = regexp.MustCompile(`h(?:e.*)o w(\w*)d`)
+	fmt.Println(reg.NumSubexp()) // 1
+
+	// 返回正则表达式中捕获分组的名字
+	reg = regexp.MustCompile(`h(e.*)o w(\w*)d`)
+	fmt.Printf("%q\n", reg.SubexpNames()) // ["" "" ""] 注意：此处为3个空字符串
+	reg = regexp.MustCompile(`h(?P<first>e.*)o w(?P<second>\w*)d`)
+	fmt.Println(reg.SubexpNames()) // [ first second] 注意：此处为3个字符串，第一个字符串为空
+
+	// 让正则表达式采用“leftmost-longest”模式
+	// reg.Longest()
+
+	// 检查b中是否存在匹配正则表达式的子序列
+	// func (re *Regexp) Match(b []byte) bool
+	reg = regexp.MustCompile("he.*")
+	fmt.Println(reg.Match([]byte("hello")))                        // true
+	fmt.Println(reg.MatchString("hello"))                          // true
+	fmt.Println(reg.MatchReader(bytes.NewReader([]byte("hello")))) // true
+
+	// 返回b中匹配正则表达式的第一个子序列
+	// func (re *Regexp) Find(b []byte) []byte
+	reg = regexp.MustCompile(`he\w*`)
+	fmt.Println(string(reg.Find([]byte("hello world")))) // hello
+	fmt.Println(reg.FindString("hello world"))           // hello
+
+	// 返回b中匹配正则表达式的第一个子序列的索引
+	// func (re *Regexp) FindIndex(b []byte) (loc []int)
+	fmt.Println(reg.FindIndex([]byte("hello world")))                        // [0 5]
+	fmt.Println(reg.FindStringIndex("hello world"))                          // [0 5]
+	fmt.Println(reg.FindReaderIndex(bytes.NewReader([]byte("hello world")))) // [0 5]
+
 	//
 	//	r, err := regexp.Compile("(?i:He.*),") // 匹配但不捕获的分组
 	//	if err != nil {
