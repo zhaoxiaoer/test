@@ -70,15 +70,30 @@ func main() {
 
 	// 返回b中匹配正则表达式的第一个子序列
 	// func (re *Regexp) Find(b []byte) []byte
-	reg = regexp.MustCompile(`he\w*`)
-	fmt.Println(string(reg.Find([]byte("hello world")))) // hello
-	fmt.Println(reg.FindString("hello world"))           // hello
+	reg = regexp.MustCompile(`he\w*`)                           // heee虽然也匹配正则表达式，但其是第二个子序列
+	fmt.Println(string(reg.Find([]byte("hello world, heeee")))) // hello
+	fmt.Println(reg.FindString("hello world"))                  // hello
 
 	// 返回b中匹配正则表达式的第一个子序列的索引
 	// func (re *Regexp) FindIndex(b []byte) (loc []int)
 	fmt.Println(reg.FindIndex([]byte("hello world")))                        // [0 5]
 	fmt.Println(reg.FindStringIndex("hello world"))                          // [0 5]
 	fmt.Println(reg.FindReaderIndex(bytes.NewReader([]byte("hello world")))) // [0 5]
+
+	// 返回b中匹配正则表达式的第一个子序列以及（可能有的）分组匹配的子序列
+	// func (re *Regexp) FindSubmatch(b []byte) [][]byte
+	reg = regexp.MustCompile(`he(\w*)o w([[:alpha:]]*)d`)                            // 注：ASCII字符族需要用两个中括号
+	fmt.Println(reg.FindSubmatch([]byte("hello world")))                             // [[104 101 108 108 111 32 119 111 114 108 100] [108 108] [111 114 108]]
+	fmt.Println(reg.FindStringSubmatch("hello world"))                               // [hello world ll orl]
+	fmt.Println(reg.FindSubmatchIndex([]byte("hello world")))                        // [0 11 2 4 7 10]
+	fmt.Println(reg.FindStringSubmatchIndex("hello world"))                          // [0 11 2 4 7 10]
+	fmt.Println(reg.FindReaderSubmatchIndex(bytes.NewReader([]byte("hello world")))) // [0 11 2 4 7 10]
+
+	// 返回b中匹配正则表达式的n个子序列。如果n为-1，则返回所有匹配的子序列
+	// func (re *Regexp) FindAll(b []byte, n int) [][]byte
+	reg = regexp.MustCompile(`he(\w*)o w([[:alpha:]]*)d`)
+	fmt.Println(reg.FindAll([]byte("hello world, heeeeo wwwwd"), -1)) // [[104 101 108 108 111 32 119 111 114 108 100] [104 101 101 101 101 111 32 119 119 119 119 100]]
+	fmt.Println(reg.FindAllString("hello world, heeeeo wwwwd", -1))   // [hello world heeeeo wwwwd]
 
 	//
 	//	r, err := regexp.Compile("(?i:He.*),") // 匹配但不捕获的分组
