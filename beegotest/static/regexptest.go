@@ -80,6 +80,14 @@ func main() {
 	fmt.Println(reg.FindStringIndex("hello world"))                          // [0 5]
 	fmt.Println(reg.FindReaderIndex(bytes.NewReader([]byte("hello world")))) // [0 5]
 
+	// 注意，分组分为：
+	// 1. 捕获
+	// 1.1 编号的捕获分组
+	// 1.2 编号并命名的捕获分组
+	// 2. 不捕获
+	// 2.1 不捕获，匹配的分组
+	// 2.1.1 不捕获，匹配，且设置特定分组的标志的分组
+	// 2.2 不捕获，不匹配，且设置当前分组的标志的分组
 	// 返回b中匹配正则表达式的第一个子序列以及（可能有的）分组匹配的子序列
 	// func (re *Regexp) FindSubmatch(b []byte) [][]byte
 	reg = regexp.MustCompile(`he(\w*)o w([[:alpha:]]*)d`)                            // 注：ASCII字符族需要用两个中括号
@@ -154,21 +162,26 @@ func main() {
 	// func (re *Regexp) Split(s string, n int) []string
 	reg = regexp.MustCompile("a*")                       // 匹配0到N次
 	fmt.Printf("%q\n", reg.Split("abaabaccadddaaae", 5)) // ["" "b" "b" "c" "cadaaae"]
-	// 首先将输入字符串根据正则表达式拆分为子字符串，然后替换即可，注意最开始的空字符串
+	// 首先将输入字符串根据正则表达式拆分为子字符串，然后替换即可
 	// abaabaccadddaaae 根据判断步骤，拆分为下面的子字符串
 	// 空ab 空aab 空ac 空c 空ad 空d 空d 空aaae 空
-	fmt.Printf("%q\n", reg.Split("abaabaccadddaaae", -1)) // ["" "b" "b" "c" "c" "d" "d" "d" "e"]
+	fmt.Printf("%q\n", reg.Split("abaabaccadddaaae", -1)) // ["" "b" "b" "c" "c" "d" "d" "d" "e"] 注意最开始的空字符串
 
-	//	r, err := regexp.Compile("(?i:He.*),") // 匹配但不捕获的分组
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		return
-	//	}
-	//	//	fmt.Println(r.FindString("hello, world\n"))
-	//	fmt.Printf("%v\n", r.FindStringSubmatch("hello3, world\n"))
+	// Expand 将模板处理后，添加到dst后面。Expand将模板中的变量替换为从src中正则匹配的结果，src正则匹配的起始与结束位置由match指定
+	// func (re *Regexp) Expand(dst []byte, template []byte, src []byte, match []int) []byte
+	reg = regexp.MustCompile(`he(?P<hello>\w+)o w(?P<world>\w+)d`)
+	dst := []byte("say: ")
+	tpl := []byte("你好$hello，世界$2") // 注意：不能使用template语法{{.hello}}
+	src := []byte("aahello worldbb")
+	match := reg.FindSubmatchIndex(src)
+	fmt.Println(string(reg.Expand(dst, tpl, src, match))) // say: 你好ll，世界orl
+	// ExpandString类似
 
-	//	reg := regexp.MustCompile(`(\w)(\w)+`)
-	//	fmt.Printf("%q\n", reg.FindSubmatch([]byte("Hello World!"))) // ["Hello" "H" "o"]
-	//	reg = regexp.MustCompile(`(?:\w)(\w)(?U)+`)
-	//	fmt.Printf("%q\n", reg.FindSubmatch([]byte("Hello World!"))) // ["He" "H" "o"]
+	// 将src中所有的匹配结果替换为repl
+	// func (re *Regexp) ReplaceAllLiteral(src, repl []byte) []byte
+	reg = regexp.MustCompile(`he(?P<hello>\w+)o w(?P<world>\w+)d`)
+	fmt.Println(string(reg.ReplaceAllLiteral([]byte("aahello worldbb eehello worldff"), []byte("cc")))) // aaccbb eeccff
+	// ReplaceAllLiteralString 类似
+
+	// 将src中所有的匹配结果替换为repl。在替换时，repl中的`$`符号会按照Expand方法的规则进行解释和替换，例如$1会被替换为第一个分组匹配的结果
 }
