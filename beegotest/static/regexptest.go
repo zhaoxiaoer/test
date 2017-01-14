@@ -184,4 +184,7 @@ func main() {
 	// ReplaceAllLiteralString 类似
 
 	// 将src中所有的匹配结果替换为repl。在替换时，repl中的`$`符号会按照Expand方法的规则进行解释和替换，例如$1会被替换为第一个分组匹配的结果
+	reg = regexp.MustCompile(`he(?P<hello>\w+)o w(?P<world>\w+)d`)
+	fmt.Println(string(reg.ReplaceAll([]byte("aahello worldbb eehello worldff"), []byte("cc$2")))) // aaccorlbb eeccorlff
+	// ReplaceAllString, ReplaceAllFunc, ReplaceAllStringFunc 类似
 }
