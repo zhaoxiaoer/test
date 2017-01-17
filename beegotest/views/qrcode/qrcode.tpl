@@ -7,5 +7,6 @@
 <p>{{.errinfo}}</p>
 {{end}}
 {{if .image}}
-<img src={{.image}} alt="主页二维码" />
+<!--img src={{.image}} alt="主页二维码" /-->
+<img src="data:;base64,{{.image}}" alt="二维码" /><br>
 {{end}}
