@@ -72,6 +72,7 @@ func main() {
 
 	fmt.Printf("main 2\n")
 	beego.BeeApp.RegisterController("/admin", &admin.UserController{})
+	beego.BeeApp.RegisterController("/adminjson", &admin.UserControllerJSON{})
 	beego.BeeApp.RegisterController("/admin/index", &admin.ArticleController{})
 	beego.BeeApp.RegisterController("/admin/addpkg", &admin.AddController{})
 
