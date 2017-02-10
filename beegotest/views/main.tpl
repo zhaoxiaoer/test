@@ -6,3 +6,4 @@
 <a href="/static/markdownTest.go">go markdown语法测试源码</a><br>
 <a href="/static/reflectTest.go">go 反射测试源码</a><br>
 <a href="/static/xlsxTest.go">go xlsx文件读取与写入测试源码</a><br>
+<a href="/static/pprofTest.go">go 性能监控测试源码</a><br>

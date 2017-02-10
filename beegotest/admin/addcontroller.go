@@ -22,11 +22,11 @@ func (add *AddController) Get() {
 func (add *AddController) Post() {
 	fmt.Printf("0 AddController\n")
 
-	fmt.Printf("0 %v\n", add.Ct.Request.Form)
-	add.Ct.Request.ParseForm()
-	fmt.Printf("1 %v\n", add.Ct.Request.Form)
+	fmt.Printf("0 %v\n", add.Ctx.Request.Form)
+	add.Ctx.Request.ParseForm()
+	fmt.Printf("1 %v\n", add.Ctx.Request.Form)
 
-	add.Ct.WriteString("AddController Post")
+	add.Ctx.WriteString("AddController Post")
 
 	fmt.Printf("1 AddController\n")
 }

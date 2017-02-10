@@ -12,6 +12,6 @@ type ArticleController struct {
 
 func (article *ArticleController) Get() {
 	fmt.Printf("0 ArticleController Get\n")
-	article.Ct.WriteString("ArticleController Get")
+	article.Ctx.WriteString("ArticleController Get")
 	fmt.Printf("1 ArticleController Get\n")
 }

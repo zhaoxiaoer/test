@@ -12,7 +12,7 @@ type UserController struct {
 
 func (user *UserController) Get() {
 	fmt.Printf("0 UserController Get\n")
-	user.Ct.WriteString("UserController Get")
+	user.Ctx.WriteString("UserController Get")
 	fmt.Printf("1 UserController Get\n")
 }
 

@@ -34,10 +34,10 @@ func (qr *Qrcode) Get() {
 func (qr *Qrcode) Post() {
 	fmt.Printf("0 Qrcode Post\n")
 
-	fmt.Printf("0 %v\n", qr.Ct.Request.Form)
-	qr.Ct.Request.ParseForm()
-	fmt.Printf("1 %v\n", qr.Ct.Request.Form)
-	content := qr.Ct.Request.Form["content"][0]
+	fmt.Printf("0 %v\n", qr.Ctx.Request.Form)
+	qr.Ctx.Request.ParseForm()
+	fmt.Printf("1 %v\n", qr.Ctx.Request.Form)
+	content := qr.Ctx.Request.Form["content"][0]
 
 	qr.Layout = "qrcode/layout.html"
 	qr.TplNames = "qrcode/qrcode.tpl"

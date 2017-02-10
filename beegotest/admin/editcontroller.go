@@ -12,13 +12,13 @@ type EditController struct {
 
 func (edit *EditController) Get() {
 	fmt.Printf("0 EditController Get\n")
-	fmt.Printf("params: %v\n", edit.Ct.Params)
-	edit.Ct.WriteString(fmt.Sprintf("EditController get, id: %v", edit.Ct.Params[":id"]))
+	fmt.Printf("params: %v\n", edit.Ctx.Params)
+	edit.Ctx.WriteString(fmt.Sprintf("EditController get, id: %v", edit.Ctx.Params[":id"]))
 	fmt.Printf("1 EditController Get\n")
 }
 
 func (edit *EditController) Post() {
 	fmt.Printf("0 EditController Post\n")
-	edit.Ct.WriteString("EditController post")
+	edit.Ctx.WriteString("EditController post")
 	fmt.Printf("1 EditController Post\n")
 }

@@ -28,11 +28,11 @@ func (emu *Emulator) Get() {
 func (emu *Emulator) Post() {
 	fmt.Printf("0 Emulator\n")
 
-	fmt.Printf("0 %v\n", emu.Ct.Request.Form)
-	emu.Ct.Request.ParseForm()
-	fmt.Printf("1 %v\n", emu.Ct.Request.Form)
-	postUrl := emu.Ct.Request.Form["posturl"][0]
-	postBody := emu.Ct.Request.Form["postbody"][0]
+	fmt.Printf("0 %v\n", emu.Ctx.Request.Form)
+	emu.Ctx.Request.ParseForm()
+	fmt.Printf("1 %v\n", emu.Ctx.Request.Form)
+	postUrl := emu.Ctx.Request.Form["posturl"][0]
+	postBody := emu.Ctx.Request.Form["postbody"][0]
 
 	//	body := httpPost(postUrl, postBody)
 	body := httpDo(postUrl, postBody)

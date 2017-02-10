@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 
 	"./admin"
 	"./controllers"
@@ -20,19 +21,19 @@ type TestHtmlMethod struct {
 
 func (test *TestHtmlMethod) Get() {
 	fmt.Printf("0 TestHtmlMethod: Get\n")
-	test.Ct.Request.ParseForm()
-	fmt.Printf("form: %v\n", test.Ct.Request.Form)
+	test.Ctx.Request.ParseForm()
+	fmt.Printf("form: %v\n", test.Ctx.Request.Form)
 
-	test.Ct.WriteString("test html [GET] method")
+	test.Ctx.WriteString("test html [GET] method")
 	fmt.Printf("1 TestHtmlMethod: Get\n")
 }
 
 func (test *TestHtmlMethod) Post() {
 	fmt.Printf("0 TestHtmlMethod: Post\n")
-	test.Ct.Request.ParseForm()
-	fmt.Printf("form: %v\n", test.Ct.Request.Form)
+	test.Ctx.Request.ParseForm()
+	fmt.Printf("form: %v\n", test.Ctx.Request.Form)
 
-	test.Ct.WriteString("test html [POST] method")
+	test.Ctx.WriteString("test html [POST] method")
 	fmt.Printf("1 TestHtmlMethod: Post\n")
 }
 
@@ -65,29 +66,29 @@ func main() {
 	//	fmt.Printf("Phone: %v\n", result.Phone)
 
 	fmt.Printf("main 0\n")
-	beego.BeeApp.RegisterController("/", &controllers.MainController{})
+	beego.RegisterController("/", &controllers.MainController{})
 
 	//	fmt.Printf("main 1\n")
 	//	beego.BeeApp.RegisterController("/testhtmlmethod/test.html", &TestHtmlMethod{})
 
 	fmt.Printf("main 2\n")
-	beego.BeeApp.RegisterController("/admin", &admin.UserController{})
-	beego.BeeApp.RegisterController("/adminjson", &admin.UserControllerJSON{})
-	beego.BeeApp.RegisterController("/admin/index", &admin.ArticleController{})
-	beego.BeeApp.RegisterController("/admin/addpkg", &admin.AddController{})
+	beego.RegisterController("/admin", &admin.UserController{})
+	beego.RegisterController("/adminjson", &admin.UserControllerJSON{})
+	beego.RegisterController("/admin/index", &admin.ArticleController{})
+	beego.RegisterController("/admin/addpkg", &admin.AddController{})
 
 	fmt.Printf("main 22\n")
-	beego.BeeApp.RegisterController("/admin/editpkg/:id([0-9]+)", &admin.EditController{})
-	beego.BeeApp.RegisterController("/admin/delpkg/:id([0-9]+)", &admin.DelController{})
+	beego.RegisterController("/admin/editpkg/:id([0-9]+)", &admin.EditController{})
+	beego.RegisterController("/admin/delpkg/:id([0-9]+)", &admin.DelController{})
 
 	fmt.Printf("main 2222233333\n")
-	beego.BeeApp.RegisterController("/proemulator/emulator", &proemulator.Emulator{})
+	beego.RegisterController("/proemulator/emulator", &proemulator.Emulator{})
 
 	fmt.Printf("main 4444444444\n")
-	beego.BeeApp.RegisterController("/qrcode/qrcode", &qrcode.Qrcode{})
+	beego.RegisterController("/qrcode/qrcode", &qrcode.Qrcode{})
 
 	fmt.Printf("main 33333\n")
-	beego.BeeApp.RegisterController("/:pkg(.*)", &controllers.MainController{})
+	beego.RegisterController("/:pkg(.*)", &controllers.MainController{})
 
 	fmt.Printf("main 3\n")
 	beego.BeeApp.SetStaticPath("/public", "public")
@@ -99,8 +100,8 @@ func main() {
 		//			http.Error(w, "user error", http.StatusUnauthorized)
 		//		}
 	}
-	beego.BeeApp.Filter(FilterUser)
-	beego.BeeApp.FilterParam("id", func(w http.ResponseWriter, r *http.Request) {
+	beego.Filter(FilterUser)
+	beego.FilterParam("id", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Filter id\n")
 		id := r.URL.Query().Get(":id")
 		fmt.Printf("id: %v\n", id)
@@ -109,7 +110,7 @@ func main() {
 			http.Error(w, s, http.StatusUnauthorized)
 		}
 	})
-	beego.BeeApp.FilterPrefixPath("/admin/delpkg", func(w http.ResponseWriter, r *http.Request) {
+	beego.FilterPrefixPath("/admin/delpkg", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Filter prefix path [/admin/delpkg]\n")
 		id := r.URL.Query().Get(":id")
 		if id == "4" {
@@ -118,5 +119,5 @@ func main() {
 		}
 	})
 
-	beego.BeeApp.Run()
+	beego.Run()
 }
