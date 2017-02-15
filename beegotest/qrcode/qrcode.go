@@ -18,6 +18,10 @@ func (qr *Qrcode) Get() {
 
 	qr.Layout = "qrcode/layout.html"
 	qr.TplNames = "qrcode/qrcode.tpl"
+
+	qr.Data["time"] = time.Now()
+	qr.Data["format"] = "Y-m-d G:i:s"
+
 	qr.Data["url"] = "/qrcode/qrcode"
 	qr.Data["content"] = "http://192.168.1.7:8080/"
 	//	qr.Data["image"] = "/static/homepage.png"
