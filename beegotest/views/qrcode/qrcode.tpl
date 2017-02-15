@@ -1,3 +1,4 @@
+<p>{{date .time .format}}</p>
 <form action={{.url}} method="post">
 请输入内容:<br>
 <input type="text" name="content" value={{.content}} style="width:600px;height:30px"><br>

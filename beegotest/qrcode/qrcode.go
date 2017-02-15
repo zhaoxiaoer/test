@@ -3,6 +3,7 @@ package qrcode
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/skip2/go-qrcode"
 	"github.com2/astaxie/beego"
@@ -41,6 +42,10 @@ func (qr *Qrcode) Post() {
 
 	qr.Layout = "qrcode/layout.html"
 	qr.TplNames = "qrcode/qrcode.tpl"
+
+	qr.Data["time"] = time.Now()
+	qr.Data["format"] = "Y-m-d G:i:s"
+
 	qr.Data["url"] = "/qrcode/qrcode"
 	qr.Data["content"] = content
 	//	qr.Data["image"] = "/static/qr.png"
