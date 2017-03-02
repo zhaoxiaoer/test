@@ -8,3 +8,4 @@
 <a href="/static/xlsxTest.go">go xlsx文件读取与写入测试源码</a><br>
 <a href="/static/pprofTest.go">go 性能监控测试源码</a><br>
 <a href="/static/cookieTest.go">go cookie测试源码</a><br>
+<a href="/static/deferRetTest.go">go defer测试源码</a><br>
