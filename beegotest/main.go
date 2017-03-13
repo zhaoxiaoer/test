@@ -9,6 +9,7 @@ import (
 	"./controllers"
 	"./proemulator"
 	"./qrcode"
+	"./sessionCtl"
 
 	"github.com2/astaxie/beego"
 	//	"gopkg.in/mgo.v2-unstable"
@@ -86,6 +87,9 @@ func main() {
 
 	fmt.Printf("main 4444444444\n")
 	beego.RegisterController("/qrcode/qrcode", &qrcode.Qrcode{})
+
+	fmt.Printf("main 555555555\n")
+	beego.RegisterController("/sessionctl", &sessionCtl.SessionCtl{})
 
 	fmt.Printf("main 33333\n")
 	beego.RegisterController("/:pkg(.*)", &controllers.MainController{})
