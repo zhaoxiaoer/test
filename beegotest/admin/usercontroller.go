@@ -22,9 +22,15 @@ type UserControllerJSON struct {
 
 func (userj *UserControllerJSON) Get() {
 	fmt.Printf("0 UserControllerJSON Get\n")
-	//	userj.Data2 = make(map[string]interface{})
-	//	userj.Data2["name"] = "xiaoer"
-	//	userj.Data2["password"] = "123456"
-	//	userj.ServeJson()
+	type Info struct {
+		Name     string `json:"name"`
+		Password string `json:"password"`
+	}
+	info := Info{
+		Name:     "xiaoer",
+		Password: "123456",
+	}
+	userj.Data["json"] = &info
+	userj.ServeJson()
 	fmt.Printf("1 UserControllerJSON Get\n")
 }
