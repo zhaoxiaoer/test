@@ -3,7 +3,7 @@ package controllers
 import (
 	"fmt"
 
-	"github.com2/astaxie/beego"
+	"github.com/astaxie/beego"
 )
 
 type MainController struct {

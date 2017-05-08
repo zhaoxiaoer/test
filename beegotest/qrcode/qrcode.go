@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/astaxie/beego"
 	"github.com/skip2/go-qrcode"
-	"github.com2/astaxie/beego"
 )
 
 type Qrcode struct {

@@ -11,7 +11,7 @@ import (
 	"./qrcode"
 	"./sessionCtl"
 
-	"github.com2/astaxie/beego"
+	"github.com/astaxie/beego"
 	//	"gopkg.in/mgo.v2-unstable"
 	//	"gopkg.in/mgo.v2-unstable/bson"
 )
@@ -67,32 +67,32 @@ func main() {
 	//	fmt.Printf("Phone: %v\n", result.Phone)
 
 	fmt.Printf("main 0\n")
-	beego.RegisterController("/", &controllers.MainController{})
+	beego.Router("/", &controllers.MainController{})
 
 	//	fmt.Printf("main 1\n")
 	//	beego.BeeApp.RegisterController("/testhtmlmethod/test.html", &TestHtmlMethod{})
 
 	fmt.Printf("main 2\n")
-	beego.RegisterController("/admin", &admin.UserController{})
-	beego.RegisterController("/adminjson", &admin.UserControllerJSON{})
-	beego.RegisterController("/admin/index", &admin.ArticleController{})
-	beego.RegisterController("/admin/addpkg", &admin.AddController{})
+	beego.Router("/admin", &admin.UserController{})
+	beego.Router("/adminjson", &admin.UserControllerJSON{})
+	beego.Router("/admin/index", &admin.ArticleController{})
+	beego.Router("/admin/addpkg", &admin.AddController{})
 
 	fmt.Printf("main 22\n")
-	beego.RegisterController("/admin/editpkg/:id([0-9]+)", &admin.EditController{})
-	beego.RegisterController("/admin/delpkg/:id([0-9]+)", &admin.DelController{})
+	beego.Router("/admin/editpkg/:id([0-9]+)", &admin.EditController{})
+	beego.Router("/admin/delpkg/:id([0-9]+)", &admin.DelController{})
 
 	fmt.Printf("main 2222233333\n")
-	beego.RegisterController("/proemulator/emulator", &proemulator.Emulator{})
+	beego.Router("/proemulator/emulator", &proemulator.Emulator{})
 
 	fmt.Printf("main 4444444444\n")
-	beego.RegisterController("/qrcode/qrcode", &qrcode.Qrcode{})
+	beego.Router("/qrcode/qrcode", &qrcode.Qrcode{})
 
 	fmt.Printf("main 555555555\n")
-	beego.RegisterController("/sessionctl", &sessionCtl.SessionCtl{})
+	beego.Router("/sessionctl", &sessionCtl.SessionCtl{})
 
 	fmt.Printf("main 33333\n")
-	beego.RegisterController("/:pkg(.*)", &controllers.MainController{})
+	beego.Router("/:pkg(.*)", &controllers.MainController{})
 
 	fmt.Printf("main 3\n")
 	beego.BeeApp.SetStaticPath("/public", "public")

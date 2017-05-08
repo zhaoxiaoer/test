@@ -3,7 +3,7 @@ package admin
 import (
 	"fmt"
 
-	"github.com2/astaxie/beego"
+	"github.com/astaxie/beego"
 )
 
 type EditController struct {

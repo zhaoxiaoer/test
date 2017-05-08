@@ -7,7 +7,7 @@ import (
 	//	"net/url"
 	"strings"
 
-	"github.com2/astaxie/beego"
+	"github.com/astaxie/beego"
 )
 
 type Emulator struct {
