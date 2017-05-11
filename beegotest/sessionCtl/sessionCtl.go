@@ -18,9 +18,8 @@ func (sessionCtl *SessionCtl) Get() {
 }
 
 func (sessionCtl *SessionCtl) Post() {
-	sessionCtl.Ctx.Request.ParseForm()
-	username := sessionCtl.Ctx.Request.Form["username"][0]
-	password := sessionCtl.Ctx.Request.Form["password"][0]
+	username := sessionCtl.GetString("username")
+	password := sessionCtl.GetString("password")
 	fmt.Printf("username: %s, password: %s\n", username, password)
 	sessionCtl.SetSession("username", username)
 	sessionCtl.SetSession("password", password)
