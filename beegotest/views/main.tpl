@@ -10,3 +10,4 @@
 <a href="/static/cookieTest.go">go cookie测试源码</a><br>
 <a href="/static/deferRetTest.go">go defer测试源码</a><br>
 <a href="/sessionctl">session测试</a><br>
+<a href="/uploadFile">上传文件测试</a><br>

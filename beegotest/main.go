@@ -10,6 +10,7 @@ import (
 	"./proemulator"
 	"./qrcode"
 	"./sessionCtl"
+	"./uploadFile"
 
 	"github.com/astaxie/beego"
 	//	"gopkg.in/mgo.v2-unstable"
@@ -90,6 +91,9 @@ func main() {
 
 	fmt.Printf("main 555555555\n")
 	beego.Router("/sessionctl", &sessionCtl.SessionCtl{})
+
+	fmt.Printf("main 666666666\n")
+	beego.Router("/uploadFile", &uploadFile.UploadFile{})
 
 	fmt.Printf("main 33333\n")
 	beego.Router("/:pkg(.*)", &controllers.MainController{})
