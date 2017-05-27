@@ -27,7 +27,7 @@ func (uf *UploadFile) Post() {
 	defer file.Close()
 
 	//创建文件
-	f, err := os.Create("./uploadFile/" + fileHeader.Filename)
+	f, err := os.OpenFile("./uploadFile/"+fileHeader.Filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		uf.Data["result"] = "文件创建失败"
 		return
