@@ -95,8 +95,8 @@ func main() {
 	fmt.Printf("main 666666666\n")
 	beego.Router("/uploadFile", &uploadFile.UploadFile{})
 
-	fmt.Printf("main 33333\n")
-	beego.Router("/:pkg(.*)", &controllers.MainController{})
+	//	fmt.Printf("main 33333\n")
+	//	beego.Router("/:pkg(.*)", &controllers.MainController{})
 
 	fmt.Printf("main 3\n")
 	beego.BeeApp.SetStaticPath("/public", "public")
