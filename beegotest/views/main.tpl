@@ -13,3 +13,4 @@
 <a href="/static/udpClient.go">go udp client 测试源码</a><br>
 <a href="/sessionctl">session测试</a><br>
 <a href="/uploadFile">上传文件测试</a><br>
+<a href="/wsserver">websocket测试</a><br>

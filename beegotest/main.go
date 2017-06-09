@@ -11,8 +11,10 @@ import (
 	"./qrcode"
 	"./sessionCtl"
 	"./uploadFile"
+	"./wsserver"
 
 	"github.com/astaxie/beego"
+	"golang.org/x/net/websocket"
 	//	"gopkg.in/mgo.v2-unstable"
 	//	"gopkg.in/mgo.v2-unstable/bson"
 )
@@ -97,6 +99,9 @@ func main() {
 
 	//	fmt.Printf("main 33333\n")
 	//	beego.Router("/:pkg(.*)", &controllers.MainController{})
+	fmt.Printf("add wsserver\n")
+	beego.Router("/wsserver", &wsserver.Wsserver{})
+	beego.RouterHandler("/chat", websocket.Handler(wsserver.ChatHandler))
 
 	fmt.Printf("main 3\n")
 	beego.BeeApp.SetStaticPath("/public", "public")
