@@ -1,3 +1,5 @@
+// 参考https://github.com/Scalingo/go-graceful-restart-example
+// http://studygolang.com/articles/2076
 package main
 
 import (
