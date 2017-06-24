@@ -11,6 +11,7 @@
 <a href="/static/deferRetTest.go">go defer测试源码</a><br>
 <a href="/static/udpServer.go">go udp server 测试源码</a><br>
 <a href="/static/udpClient.go">go udp client 测试源码</a><br>
+<a href="/static/reload.go">go 服务器热更新 测试源码</a><br>
 <a href="/sessionctl">session测试</a><br>
 <a href="/uploadFile">上传文件测试</a><br>
 <a href="/wsserver">websocket测试</a><br>
