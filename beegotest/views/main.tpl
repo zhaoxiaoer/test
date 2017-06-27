@@ -15,3 +15,4 @@
 <a href="/sessionctl">session测试</a><br>
 <a href="/uploadFile">上传文件测试</a><br>
 <a href="/wsserver">websocket测试</a><br>
+<a href="/jsonptest">jsonp测试</a><br>

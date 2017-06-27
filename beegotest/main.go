@@ -103,6 +103,9 @@ func main() {
 	beego.Router("/wsserver", &wsserver.Wsserver{})
 	beego.RouterHandler("/chat", websocket.Handler(wsserver.ChatHandler))
 
+	beego.Router("/jsonptest", &admin.UserControllerJSONP{})
+	beego.Router("/jsonptest2", &admin.UserControllerJSONP2{})
+
 	fmt.Printf("main 3\n")
 	beego.BeeApp.SetStaticPath("/public", "public")
 

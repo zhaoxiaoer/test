@@ -34,3 +34,32 @@ func (userj *UserControllerJSON) Get() {
 	userj.ServeJson()
 	fmt.Printf("1 UserControllerJSON Get\n")
 }
+
+type UserControllerJSONP struct {
+	beego.Controller
+}
+
+func (userjp *UserControllerJSONP) Get() {
+	userjp.TplNames = "./admin/userjp.tpl"
+}
+
+type UserControllerJSONP2 struct {
+	beego.Controller
+}
+
+func (userjp2 *UserControllerJSONP2) Get() {
+	fmt.Printf("UserControllerJSONP2 begin\n")
+	type Info struct {
+		Name    string `json:"name"`
+		Address string `json:"address"`
+		Message string `json:"message"`
+	}
+	info := Info{
+		Name:    "xiaoer",
+		Address: "machang",
+		Message: userjp2.Ctx.Request.Form.Get("message"),
+	}
+	userjp2.Data["jsonp"] = &info
+	userjp2.ServeJsonp()
+	fmt.Printf("UserControllerJSONP2 end\n")
+}
