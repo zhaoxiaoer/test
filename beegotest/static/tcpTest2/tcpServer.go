@@ -50,7 +50,6 @@ func (bcb *BCallback) OnError(err error, bc *BConn) {
 }
 
 type BConn struct {
-	callback  Callback
 	conn      net.Conn
 	writeChan chan []byte
 	exitChan  chan struct{}
@@ -59,9 +58,8 @@ type BConn struct {
 	closeOnce sync.Once
 }
 
-func NewBConn(conn net.Conn, callback Callback) *BConn {
+func NewBConn(conn net.Conn) *BConn {
 	return &BConn{
-		callback:  callback,
 		conn:      conn,
 		writeChan: make(chan []byte),
 		exitChan:  make(chan struct{}),
@@ -70,8 +68,13 @@ func NewBConn(conn net.Conn, callback Callback) *BConn {
 	}
 }
 
+// 当前这种写法，“已连接”的消息由 clientManager goroutine 发送，
+// “已断开”的消息由 clientManager、readLoop、writeLoop 三个 goroutine 中的其中
+// 一个发送（当 server 主动关闭连接时，“已断开”的消息由 clientManager 发送，
+// 当 client 主动关闭连接时，“已断开”的消息由 readLoop 或 writeLoop 发送
+// 这样就可能出现“已连接”消息和”已断开“消息不是由同一个 goroutine 发送的情况
 func (bc *BConn) Serve() {
-	bc.callback.OnConnected(bc)
+	//	obd.events <- "已连接"
 	go bc.readLoop()
 	go bc.writeLoop()
 }
@@ -93,7 +96,8 @@ func (bc *BConn) readLoop() {
 			str += fmt.Sprintf("0x%02X ", buf[i])
 		}
 		fmt.Println(str)
-		bc.callback.OnMessage(bc, buf[:n])
+		//		bc.callback.OnMessage(bc, buf[:n])
+		//		obd.events <- "收到数据"
 	}
 }
 
@@ -125,7 +129,8 @@ func (bc *BConn) Close() {
 	fmt.Printf("close begin\n")
 	bc.closeOnce.Do(func() {
 		fmt.Printf("close begin 1\n")
-		bc.callback.OnDisconnected(bc)
+		//		bc.callback.OnDisconnected(bc)
+		//		obd.events <- "已断开"
 		bc.conn.Close() // 关闭链接
 
 		// 等待读循环goroutine退出
@@ -208,39 +213,40 @@ func (obd *OBD) write() {
 }
 
 func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
-	bcs := make(map[*BConn]bool)
+	// 当前只允许存在一个连接
+	var bc *BConn
 
 	for {
 		select {
 		case conn, ok := <-cAdd:
 			if !ok {
 				fmt.Printf("cAdd channel has been closed\n")
-				for bc := range bcs {
-					fmt.Printf("aaaa\n")
+				if bc != nil {
 					bc.Close()
-					fmt.Printf("bbbb\n")
 				}
-
 				fmt.Printf("22222\n")
 				close(cmQuit)
 				return
 			} else {
-				bcb := &BCallback{}
-				bc := NewBConn(conn, bcb)
+				// 为了提高效率，用新连接代替老连接
+				if bc != nil {
+					bc.Close()
+				}
+
+				bc = NewBConn(conn)
 				bc.Serve()
-				bcs[bc] = true
 			}
 		case <-time.After(100 * time.Millisecond):
 			// 没办法通过channel来删除conn，所以只能采用主动查询的方式
-			for bc := range bcs {
-				if bc.IsClosed() {
-					fmt.Printf("delete\n")
-					delete(bcs, bc)
-				}
+			if (bc != nil) && (bc.IsClosed()) {
+				fmt.Printf("连接已断开\n")
+				bc = nil
 			}
 		case d := <-obd.cData:
-			for bc := range bcs {
+			if bc != nil {
 				bc.Write(d)
+			} else {
+				obd.events <- "未连接，无法发送数据"
 			}
 		}
 	}
@@ -274,12 +280,6 @@ func (obd *OBD) startAccept(lClose <-chan bool, aQuit chan<- bool) {
 		}
 
 		cAdd <- conn
-	}
-}
-
-func (obd *OBD) eventPro() {
-	for event := range obd.events {
-		fmt.Println(event)
 	}
 }
 
@@ -335,6 +335,12 @@ func (obd *OBD) commPro() {
 				obd.events <- "server has uninitialized"
 			}
 		}
+	}
+}
+
+func (obd *OBD) eventPro() {
+	for event := range obd.events {
+		fmt.Println(event)
 	}
 }
 
