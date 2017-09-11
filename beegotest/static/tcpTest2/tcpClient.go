@@ -16,7 +16,7 @@ func main() {
 	}
 	//	defer conn.Close() // 关闭连接
 
-	who := conn.RemoteAddr().String()
+	//	who := conn.RemoteAddr().String()
 
 	go func(conn net.Conn) {
 		for {
@@ -26,7 +26,8 @@ func main() {
 				fmt.Printf("err: %v\n", err)
 				break
 			}
-			str := who + ": "
+			//			str := who + ": "
+			str := ""
 			for i := 0; i < n; i++ {
 				str += fmt.Sprintf("0x%02X ", buf[i])
 			}
