@@ -103,13 +103,7 @@ func (bc *BConn) readLoop() {
 		//		fmt.Println(str)
 		//		bc.callback.OnMessage(bc, buf[:n])
 		//		obd.events <- "收到数据"
-		eType := 0
-		if bc.name == "client" {
-			eType = 29
-		} else {
-			eType = 22
-		}
-		bc.msg <- event{eType, bc.name, buf[:n]}
+		bc.msg <- event{21, bc.name, buf[:n]}
 	}
 }
 
@@ -353,33 +347,37 @@ func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 			}
 		case evt := <-obd.messages:
 			if evt.eType == 21 {
-				// server发送的消息将发送给client和所有hooker
-				for bc := range bcs {
-					bc.Write(evt.eOptVal)
-				}
-			} else if evt.eType == 29 {
-				// 发送给server
-				obd.events <- event{-15, "收到client数据", evt.eOptVal}
-				for bc, name := range bcs {
-					// 发送给所有hooker
-					if name == "hooker" {
+				if evt.eDesc == "server" {
+					// server发送的消息将发送给client和所有hooker
+					for bc := range bcs {
 						bc.Write(evt.eOptVal)
 					}
-				}
-			} else {
-				// hooker发送的消息将根据数据的第一个字节来确定
-				// 应该将剩余数据发送给server还是client
-				if evt.eOptVal[0] == 0x30 {
-					obd.events <- event{-16, "收到hooker数据", evt.eOptVal[1:]}
-				} else {
+				} else if evt.eDesc == "client" {
+					// 发送给server
+					obd.events <- event{-15, "client", evt.eOptVal}
 					for bc, name := range bcs {
-						// 仅发送给client
-						if name == "client" {
-							bc.Write(evt.eOptVal[1:])
-							break
+						// 发送给所有hooker
+						if name == "hooker" {
+							bc.Write(evt.eOptVal)
+						}
+					}
+				} else {
+					// hooker发送的数据将根据数据的第一个字节来确定
+					// 应该将剩余数据发送给server还是client
+					if evt.eOptVal[0] == 0x30 {
+						obd.events <- event{-15, "hooker", evt.eOptVal[1:]}
+					} else {
+						for bc, name := range bcs {
+							// 仅发送给client
+							if name == "client" {
+								bc.Write(evt.eOptVal[1:])
+								break
+							}
 						}
 					}
 				}
+			} else {
+				fmt.Printf("unknown type: %d\n", evt.eType)
 			}
 		}
 	}
