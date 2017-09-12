@@ -53,7 +53,7 @@ func (bcb *BCallback) OnError(err error, bc *BConn) {
 type BConn struct {
 	conn      net.Conn
 	name      string
-	msg       chan message
+	msg       chan event
 	writeChan chan []byte
 	exitChan  chan struct{}
 	rlQuit    chan struct{}
@@ -61,7 +61,7 @@ type BConn struct {
 	closeOnce sync.Once
 }
 
-func NewBConn(conn net.Conn, name string, messages chan message) *BConn {
+func NewBConn(conn net.Conn, name string, messages chan event) *BConn {
 	return &BConn{
 		conn:      conn,
 		name:      name,
@@ -89,7 +89,7 @@ func (bc *BConn) readLoop() {
 	defer close(bc.rlQuit)
 
 	for {
-		buf := make([]byte, 8)
+		buf := make([]byte, 1024)
 		n, err := bc.conn.Read(buf)
 		if err != nil {
 			//			bc.callback.OnError(err, bc)
@@ -103,7 +103,13 @@ func (bc *BConn) readLoop() {
 		//		fmt.Println(str)
 		//		bc.callback.OnMessage(bc, buf[:n])
 		//		obd.events <- "收到数据"
-		bc.msg <- message{bc.name, buf[0:n]}
+		eType := 0
+		if bc.name == "client" {
+			eType = 29
+		} else {
+			eType = 22
+		}
+		bc.msg <- event{eType, bc.name, buf[:n]}
 	}
 }
 
@@ -149,6 +155,12 @@ func (bc *BConn) Close() {
 		// 标志该链接已完全退出
 		close(bc.exitChan)
 	})
+
+	// 确保readLoop和writeLoop都退出
+	// 如果没有 <-bc.ExitChan，clientManager goroutine 先退出，readLoop 后退出的话，
+	// readLoop 有可能阻塞在 bc.msg <- event{eType, bc.name, buf[:n]}
+	<-bc.exitChan
+
 	fmt.Printf("close end\n")
 }
 
@@ -181,11 +193,6 @@ func (bc *BConn) IsClosed() bool {
 	}
 }
 
-type message struct {
-	sender string
-	value  []byte
-}
-
 type event struct {
 	// 事件类型
 	eType int
@@ -196,37 +203,96 @@ type event struct {
 }
 
 type OBD struct {
+	sync.RWMutex
+	hasInited bool
+
 	commands chan event
 	events   chan event
+	commExit chan bool
+	evtExit  chan bool
 
-	// 命令goroutine通过该channel向clientManager goroutine发送"发往客户端的数据"
-	messages chan message
+	// commPro goroutine和BConn的readLoop goroutine 通过
+	// 该channel向clientManager goroutine发送数据
+	// messages为内部通信channel
+	messages chan event
 
 	listener net.Listener
 }
 
 func NewOBD() *OBD {
-	obd := &OBD{
-		events:   make(chan event),
-		commands: make(chan event),
-		messages: make(chan message),
-	}
-	go obd.eventPro() // 发送事件的goroutine
-	go obd.commPro()  // 接收命令的goroutine
-
+	obd := &OBD{}
 	return obd
 }
 
 func (obd *OBD) init() {
-	obd.commands <- event{1, "initServer\n", nil}
+	obd.Lock()
+	if !obd.hasInited {
+		// 初始化命令接收goroutine和事件处理goroutine
+		obd.evtExit = make(chan bool)
+		obd.commExit = make(chan bool)
+		obd.events = make(chan event)
+		obd.commands = make(chan event)
+		obd.messages = make(chan event)
+		go obd.eventPro() // 发送事件的goroutine
+		go obd.commPro()  // 接收命令的goroutine
+
+		obd.hasInited = true
+		fmt.Printf("obd inited\n")
+	} else {
+		fmt.Printf("obd has inited\n")
+	}
+	obd.Unlock()
 }
 
 func (obd *OBD) uninit() {
-	obd.commands <- event{9, "uninitServer\n", nil}
+	obd.Lock()
+	if obd.hasInited {
+		// 先反初始化server
+		obd.commands <- event{9, "uninitServer\n", nil}
+
+		// 释放命令接收goroutine和事件处理goroutine资源
+		close(obd.commands)
+		<-obd.commExit
+		close(obd.messages)
+		close(obd.events)
+		<-obd.evtExit
+
+		obd.hasInited = false
+		fmt.Printf("obd uninited\n")
+	} else {
+		fmt.Printf("obd has uninited\n")
+	}
+	obd.Unlock()
+}
+
+func (obd *OBD) initServer() {
+	obd.RLock()
+	if obd.hasInited {
+		obd.commands <- event{1, "initServer\n", nil}
+	} else {
+		fmt.Printf("obd has not inited\n")
+	}
+	obd.RUnlock()
+}
+
+func (obd *OBD) uninitServer() {
+	obd.RLock()
+	if obd.hasInited {
+		obd.commands <- event{9, "uninitServer\n", nil}
+	} else {
+		fmt.Printf("obd has not inited\n")
+	}
+	obd.RUnlock()
 }
 
 func (obd *OBD) write(data []byte) {
-	obd.commands <- event{2, "write\n", data}
+	obd.RLock()
+	if obd.hasInited {
+		obd.commands <- event{2, "write\n", data}
+	} else {
+		fmt.Printf("obd has not inited\n")
+	}
+	obd.RUnlock()
 }
 
 func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
@@ -250,14 +316,22 @@ func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 				close(cmQuit)
 				return
 			} else {
-				// 将第一个连接当成client
-				// 随后的连接当成hooker
+				// 没有client时将新连接当成client
+				// 已存在client时，将新连接当成hooker
 				name := ""
-				if len(bcs) == 0 {
-					name = "client"
-				} else {
-					name = "hooker"
+				hasClient := false
+				for bc := range bcs {
+					if bc.name == "client" {
+						hasClient = true
+						break
+					}
 				}
+				if hasClient {
+					name = "hooker"
+				} else {
+					name = "client"
+				}
+
 				bc := NewBConn(conn, name, obd.messages)
 				bc.Serve()
 				bcs[bc] = name
@@ -277,32 +351,31 @@ func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 					}
 				}
 			}
-		case msg := <-obd.messages:
-			if msg.sender == "server" {
+		case evt := <-obd.messages:
+			if evt.eType == 21 {
 				// server发送的消息将发送给client和所有hooker
 				for bc := range bcs {
-					bc.Write(msg.value)
+					bc.Write(evt.eOptVal)
 				}
-			} else if msg.sender == "client" {
-				// client发送的消息将发送给server和所有hooker
+			} else if evt.eType == 29 {
 				// 发送给server
-				obd.events <- event{-15, "收到client数据", msg.value}
+				obd.events <- event{-15, "收到client数据", evt.eOptVal}
 				for bc, name := range bcs {
 					// 发送给所有hooker
 					if name == "hooker" {
-						bc.Write(msg.value)
+						bc.Write(evt.eOptVal)
 					}
 				}
 			} else {
 				// hooker发送的消息将根据数据的第一个字节来确定
 				// 应该将剩余数据发送给server还是client
-				if msg.value[0] == 0x30 {
-					obd.events <- event{-16, "收到hooker数据", msg.value[1:]}
+				if evt.eOptVal[0] == 0x30 {
+					obd.events <- event{-16, "收到hooker数据", evt.eOptVal[1:]}
 				} else {
 					for bc, name := range bcs {
 						// 仅发送给client
 						if name == "client" {
-							bc.Write(msg.value[1:])
+							bc.Write(evt.eOptVal[1:])
 							break
 						}
 					}
@@ -389,12 +462,15 @@ func (obd *OBD) commPro() {
 			}
 		} else if evt.eType == 2 {
 			if initialized {
-				obd.messages <- message{"server", evt.eOptVal}
+				obd.messages <- event{21, "server", evt.eOptVal}
 			} else {
 				obd.events <- event{-2, "server has uninitialized", nil}
 			}
 		}
 	}
+
+	close(obd.commExit)
+	fmt.Printf("commPro goroutine 退出\n")
 }
 
 func (obd *OBD) eventPro() {
@@ -407,10 +483,14 @@ func (obd *OBD) eventPro() {
 		}
 		fmt.Println(event.eType, event.eDesc, str)
 	}
+
+	close(obd.evtExit)
+	fmt.Printf("eventPro goroutine 退出\n")
 }
 
 func main() {
 	obd := NewOBD()
+	//	obd.init()
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -420,13 +500,21 @@ func main() {
 			break
 		}
 
-		if line == "initServer\n" {
+		if line == "init\n" {
 			obd.init()
-		} else if line == "uninitServer\n" {
+		} else if line == "uninit\n" {
 			obd.uninit()
+		} else if line == "initServer\n" {
+			obd.initServer()
+		} else if line == "uninitServer\n" {
+			obd.uninitServer()
 		} else if strings.HasPrefix(line, "write ") {
 			bs := []byte(line)
 			obd.write(bs[6:])
+		} else if line == "exit\n" {
+			break
 		}
 	}
+
+	//	obd.uninit()
 }

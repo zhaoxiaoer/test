@@ -20,7 +20,7 @@ func main() {
 
 	go func(conn net.Conn) {
 		for {
-			buf := make([]byte, 8)
+			buf := make([]byte, 1024)
 			n, err := conn.Read(buf)
 			if err != nil {
 				fmt.Printf("err: %v\n", err)
