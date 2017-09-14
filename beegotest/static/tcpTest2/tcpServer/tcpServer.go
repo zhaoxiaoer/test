@@ -9,6 +9,14 @@
 //           signal channel来说“让我们结束游戏吧”
 package main
 
+/*
+#include <stdlib.h>
+#include "cCallback.h"
+*/
+import "C"
+import "unsafe"
+
+//cbFunc cbf;
 import (
 	"bufio"
 	"fmt"
@@ -30,6 +38,9 @@ type Callback interface {
 	// 错误回调
 	OnError(err error, bc *BConn)
 }
+
+//#cgo CFLAGS: -I .
+//#cgo LDFLAGS: -L . -lcCallback
 
 type BCallback struct {
 }
@@ -480,6 +491,11 @@ func (obd *OBD) eventPro() {
 			}
 		}
 		fmt.Println(event.eType, event.eDesc, str)
+		var desc *C.char = C.CString(event.eDesc)
+		var value *C.char = (*C.char)((unsafe.Pointer)(C.CBytes(event.eOptVal)))
+		C.callback(C.int(event.eType), desc, value, C.int(len(event.eOptVal)))
+		C.free(unsafe.Pointer(desc))
+		C.free(unsafe.Pointer(value))
 	}
 
 	close(obd.evtExit)
@@ -515,4 +531,33 @@ func main() {
 	}
 
 	//	obd.uninit()
+}
+
+// c语言相关代码
+var DefaultOBD = &defaultOBD
+var defaultOBD OBD
+
+//export obdInit
+func obdInit() {
+	DefaultOBD.init()
+}
+
+//export obdUninit
+func obdUninit() {
+	DefaultOBD.uninit()
+}
+
+//export obdInitServer
+func obdInitServer() {
+	DefaultOBD.initServer()
+}
+
+//export obdUninitServer
+func obdUninitServer() {
+	DefaultOBD.uninitServer()
+}
+
+//export obdWrite
+func obdWrite(data []byte) {
+	DefaultOBD.write(data)
 }
