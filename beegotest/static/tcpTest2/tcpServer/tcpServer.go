@@ -318,7 +318,7 @@ func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 					}
 				}
 
-				fmt.Printf("22222\n")
+				//				fmt.Printf("22222\n")
 				close(cmQuit)
 				return
 			} else {
