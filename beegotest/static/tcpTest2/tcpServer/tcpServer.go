@@ -39,6 +39,7 @@ type Callback interface {
 	OnError(err error, bc *BConn)
 }
 
+// 编译成可执行程序时，需要链接动态库，编译成动态库时，不需要链接动态库
 //#cgo CFLAGS: -I .
 //#cgo LDFLAGS: -L . -lcCallback
 
@@ -337,6 +338,12 @@ func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 					name = "client"
 				}
 
+				// 最多允许3个连接，其中一个为client，两个为hooker
+				if (name == "hooker") && (len(bcs) > 2) {
+					conn.Close()
+					continue
+				}
+
 				bc := NewBConn(conn, name, obd.messages)
 				bc.Serve()
 				bcs[bc] = name
@@ -360,8 +367,15 @@ func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 			if evt.eType == 21 {
 				if evt.eDesc == "server" {
 					// server发送的消息将发送给client和所有hooker
+					findClient := false
 					for bc := range bcs {
+						if bc.name == "client" {
+							findClient = true
+						}
 						bc.Write(evt.eOptVal)
+					}
+					if !findClient {
+						obd.events <- event{-16, "client未连接", nil}
 					}
 				} else if evt.eDesc == "client" {
 					// 发送给server

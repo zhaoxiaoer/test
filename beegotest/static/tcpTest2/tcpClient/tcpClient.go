@@ -37,16 +37,20 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Printf("33\n")
+		//		fmt.Printf("33\n")
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
-		fmt.Printf("44\n")
-		fmt.Print(line)
+		if line == "\n" {
+			continue
+		}
+		//		fmt.Printf("44\n")
+		//		fmt.Print(line)
 
-		n, err := conn.Write([]byte(line))
-		fmt.Println(n, err)
+		data := []byte(line)
+		_, err = conn.Write(data[:len(data)-1])
+		//		fmt.Println(n, err)
 		if err != nil {
 			fmt.Printf("55\n")
 			break

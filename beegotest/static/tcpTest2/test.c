@@ -7,23 +7,28 @@
 int main(int argc, char **argv) {
 	obdInit();
 	obdInitServer();
-	char buf[5] = {0x01, 0x02, 0x03, 0x05, 0x06};
-	GoSlice gaoSlice;
-	gaoSlice.data = buf;
-	gaoSlice.len = 5;
-	gaoSlice.cap = 5;
-	obdWrite(gaoSlice);
 
 	int size = 1024;   
     char* buff = (char*)malloc(size);  
   
     // read lines  
    	while(NULL != gets(buff)){  
-       		printf("Read line with len: %d\n", strlen(buff));  
-        	printf("%s", buff);  
+//       	printf("Read line with len: %d, %s\n", strlen(buff), buff);
+		if (buff[0] == 'q') {
+			printf("quit\n");
+			break;
+		}
+
+		GoSlice gaoSlice;
+		gaoSlice.data = buff;
+		gaoSlice.len = strlen(buff);
+		gaoSlice.cap = strlen(buff);
 		obdWrite(gaoSlice);
    	}  
       
     // free buff  
-    free(buff);   
+    free(buff);  
+	
+	obdUninitServer();
+	obdUninit(); 
 }
