@@ -199,108 +199,6 @@ func (bc *BConn) IsClosed() bool {
 	}
 }
 
-type event struct {
-	// 事件类型
-	eType int
-	// 事件描述字符串
-	eDesc string
-	// 事件附加数据
-	eOptVal []byte
-}
-
-type OBD struct {
-	sync.RWMutex
-	hasInited bool
-
-	commands chan event
-	events   chan event
-	commExit chan bool
-	evtExit  chan bool
-
-	// commPro goroutine和BConn的readLoop goroutine 通过
-	// 该channel向clientManager goroutine发送数据
-	// messages为内部通信channel
-	messages chan event
-
-	listener net.Listener
-}
-
-func NewOBD() *OBD {
-	obd := &OBD{}
-	return obd
-}
-
-func (obd *OBD) init() {
-	obd.Lock()
-	if !obd.hasInited {
-		// 初始化命令接收goroutine和事件处理goroutine
-		obd.evtExit = make(chan bool)
-		obd.commExit = make(chan bool)
-		obd.events = make(chan event)
-		obd.commands = make(chan event)
-		obd.messages = make(chan event)
-		go obd.eventPro() // 发送事件的goroutine
-		go obd.commPro()  // 接收命令的goroutine
-
-		obd.hasInited = true
-		fmt.Printf("obd inited\n")
-	} else {
-		fmt.Printf("obd has inited\n")
-	}
-	obd.Unlock()
-}
-
-func (obd *OBD) uninit() {
-	obd.Lock()
-	if obd.hasInited {
-		// 先反初始化server
-		obd.commands <- event{9, "uninitServer\n", nil}
-
-		// 释放命令接收goroutine和事件处理goroutine资源
-		close(obd.commands)
-		<-obd.commExit
-		close(obd.messages)
-		close(obd.events)
-		<-obd.evtExit
-
-		obd.hasInited = false
-		fmt.Printf("obd uninited\n")
-	} else {
-		fmt.Printf("obd has uninited\n")
-	}
-	obd.Unlock()
-}
-
-func (obd *OBD) initServer() {
-	obd.RLock()
-	if obd.hasInited {
-		obd.commands <- event{1, "initServer\n", nil}
-	} else {
-		fmt.Printf("obd has not inited\n")
-	}
-	obd.RUnlock()
-}
-
-func (obd *OBD) uninitServer() {
-	obd.RLock()
-	if obd.hasInited {
-		obd.commands <- event{9, "uninitServer\n", nil}
-	} else {
-		fmt.Printf("obd has not inited\n")
-	}
-	obd.RUnlock()
-}
-
-func (obd *OBD) write(data []byte) {
-	obd.RLock()
-	if obd.hasInited {
-		obd.commands <- event{2, "write\n", data}
-	} else {
-		fmt.Printf("obd has not inited\n")
-	}
-	obd.RUnlock()
-}
-
 func (obd *OBD) clientManage(cAdd <-chan net.Conn, cmQuit chan<- bool) {
 	bcs := make(map[*BConn]string)
 
@@ -514,6 +412,108 @@ func (obd *OBD) eventPro() {
 
 	close(obd.evtExit)
 	fmt.Printf("eventPro goroutine 退出\n")
+}
+
+type event struct {
+	// 事件类型
+	eType int
+	// 事件描述字符串
+	eDesc string
+	// 事件附加数据
+	eOptVal []byte
+}
+
+type OBD struct {
+	sync.RWMutex
+	hasInited bool
+
+	commands chan event
+	events   chan event
+	commExit chan bool
+	evtExit  chan bool
+
+	// commPro goroutine和BConn的readLoop goroutine 通过
+	// 该channel向clientManager goroutine发送数据
+	// messages为内部通信channel
+	messages chan event
+
+	listener net.Listener
+}
+
+func NewOBD() *OBD {
+	obd := &OBD{}
+	return obd
+}
+
+func (obd *OBD) init() {
+	obd.Lock()
+	if !obd.hasInited {
+		// 初始化命令接收goroutine和事件处理goroutine
+		obd.evtExit = make(chan bool)
+		obd.commExit = make(chan bool)
+		obd.events = make(chan event)
+		obd.commands = make(chan event)
+		obd.messages = make(chan event)
+		go obd.eventPro() // 发送事件的goroutine
+		go obd.commPro()  // 接收命令的goroutine
+
+		obd.hasInited = true
+		fmt.Printf("obd inited\n")
+	} else {
+		fmt.Printf("obd has inited\n")
+	}
+	obd.Unlock()
+}
+
+func (obd *OBD) uninit() {
+	obd.Lock()
+	if obd.hasInited {
+		// 先反初始化server
+		obd.commands <- event{9, "uninitServer\n", nil}
+
+		// 释放命令接收goroutine和事件处理goroutine资源
+		close(obd.commands)
+		<-obd.commExit
+		close(obd.messages)
+		close(obd.events)
+		<-obd.evtExit
+
+		obd.hasInited = false
+		fmt.Printf("obd uninited\n")
+	} else {
+		fmt.Printf("obd has uninited\n")
+	}
+	obd.Unlock()
+}
+
+func (obd *OBD) initServer() {
+	obd.RLock()
+	if obd.hasInited {
+		obd.commands <- event{1, "initServer\n", nil}
+	} else {
+		fmt.Printf("obd has not inited\n")
+	}
+	obd.RUnlock()
+}
+
+func (obd *OBD) uninitServer() {
+	obd.RLock()
+	if obd.hasInited {
+		obd.commands <- event{9, "uninitServer\n", nil}
+	} else {
+		fmt.Printf("obd has not inited\n")
+	}
+	obd.RUnlock()
+}
+
+func (obd *OBD) write(data []byte) {
+	obd.RLock()
+	if obd.hasInited {
+		obd.commands <- event{2, "write\n", data}
+	} else {
+		fmt.Printf("obd has not inited\n")
+	}
+	obd.RUnlock()
 }
 
 func main() {
