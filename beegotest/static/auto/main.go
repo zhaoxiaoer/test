@@ -22,7 +22,7 @@ func main() {
 					for i := 0; i < len(evt.EOptVal); i++ {
 						str += fmt.Sprintf("0x%02X ", evt.EOptVal[i])
 					}
-					//					fmt.Println(str)
+					fmt.Println(str)
 				}
 			}
 		}

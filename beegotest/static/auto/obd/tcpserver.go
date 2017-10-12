@@ -153,6 +153,9 @@ func (ts *TCPServer) accept() {
 func (ts *TCPServer) connManage() {
 	bcs := make(map[*BConn]string)
 
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case conn, ok := <-ts.connAdd:
@@ -199,8 +202,7 @@ func (ts *TCPServer) connManage() {
 					ts.sendEvent(Event{3, "client已连接", nil})
 				}
 			}
-		case <-time.After(100 * time.Millisecond):
-			fmt.Printf("aaaaa\n")
+		case <-ticker.C:
 			// 没办法通过channel来删除conn，所以只能采用主动查询的方式
 			for bc := range bcs {
 				if bc.IsClosed() {
@@ -211,6 +213,23 @@ func (ts *TCPServer) connManage() {
 					}
 				}
 			}
+		case <-ts.getStatusMsg:
+			findClient := false
+			for bc := range bcs {
+				if bc.name == "client" {
+					findClient = true
+				}
+			}
+			if !findClient {
+				ts.statusEvent <- false
+			} else {
+				ts.statusEvent <- true
+			}
+
+		default:
+		}
+
+		select {
 		case evt := <-ts.events:
 			if evt.eType == 1 {
 				if evt.eDesc == "client" {
@@ -244,36 +263,19 @@ func (ts *TCPServer) connManage() {
 				fmt.Printf("unknown type: %d\n", evt.eType)
 			}
 		case data := <-ts.writeMsg:
-			fmt.Printf("bbbbb\n")
-			time.Sleep(10 * time.Millisecond)
 			// server发送的消息将发送给client和所有hooker
 			findClient := false
 			for bc := range bcs {
 				if bc.name == "client" {
 					findClient = true
 				}
-				fmt.Printf("111111\n")
 				bc.Write(data)
-				fmt.Printf("222222\n")
 			}
 			if !findClient {
-				//				fmt.Printf("client未连接\n")
 				ts.sendEvent(Event{2, "client未连接", nil})
 			}
-		case <-ts.getStatusMsg:
-			findClient := false
-			for bc := range bcs {
-				if bc.name == "client" {
-					findClient = true
-				}
-			}
-			if !findClient {
-				//				fmt.Printf("client未连接\n")
-				ts.statusEvent <- false
-			} else {
-				//				fmt.Printf("client已连接\n")
-				ts.statusEvent <- true
-			}
+
+		default:
 		}
 	}
 }

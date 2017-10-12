@@ -120,7 +120,7 @@ func (bc *BConn) Close() {
 func (bc *BConn) Write(b []byte) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
-			fmt.Printf("panic0: %v\n", err)
+			fmt.Printf("panic: %v\n", p)
 			err = fmt.Errorf("%v", p)
 		}
 	}()
