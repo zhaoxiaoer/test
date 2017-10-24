@@ -7,15 +7,6 @@ import (
 	"time"
 )
 
-type event struct {
-	// 事件类型
-	eType int
-	// 事件描述字符串
-	eDesc string
-	// 事件附加数据
-	eOptVal []byte
-}
-
 type Event struct {
 	// 事件类型
 	EType int
@@ -33,7 +24,7 @@ type TCPServer struct {
 
 	connAdd      chan net.Conn
 	cmQuit       chan bool
-	events       chan event
+	events       chan Event
 	writeMsg     chan []byte // 写数据
 	getStatusMsg chan int    // 获取client连接状态
 	statusEvent  chan bool   // 返回client连接状态
@@ -64,7 +55,7 @@ func (ts *TCPServer) Init() error {
 
 		ts.connAdd = make(chan net.Conn)
 		ts.cmQuit = make(chan bool)
-		ts.events = make(chan event)
+		ts.events = make(chan Event)
 		ts.writeMsg = make(chan []byte)
 		ts.getStatusMsg = make(chan int)
 		ts.statusEvent = make(chan bool)
@@ -231,27 +222,27 @@ func (ts *TCPServer) connManage() {
 
 		select {
 		case evt := <-ts.events:
-			if evt.eType == 1 {
-				if evt.eDesc == "client" {
+			if evt.EType == 1 {
+				if evt.EDesc == "client" {
 					// 发送给server
-					ts.sendEvent(Event{1, "data from the client", evt.eOptVal})
+					ts.sendEvent(Event{1, "data from the client", evt.EOptVal})
 
 					for bc, name := range bcs {
 						// 发送给所有hooker
 						if name == "hooker" {
-							bc.Write(evt.eOptVal)
+							bc.Write(evt.EOptVal)
 						}
 					}
 				} else {
 					// hooker发送的数据将根据数据的第一个字节来确定
 					// 应该将剩余数据发送给server还是client
-					if evt.eOptVal[0] == 'c' {
-						ts.sendEvent(Event{1, "data from the hooker", evt.eOptVal[1:]})
-					} else if evt.eOptVal[0] == 's' {
+					if evt.EOptVal[0] == 'c' {
+						ts.sendEvent(Event{1, "data from the hooker", evt.EOptVal[1:]})
+					} else if evt.EOptVal[0] == 's' {
 						for bc, name := range bcs {
 							// 仅发送给client
 							if name == "client" {
-								bc.Write(evt.eOptVal[1:])
+								bc.Write(evt.EOptVal[1:])
 								break
 							}
 						}
@@ -260,7 +251,7 @@ func (ts *TCPServer) connManage() {
 					}
 				}
 			} else {
-				fmt.Printf("unknown type: %d\n", evt.eType)
+				fmt.Printf("unknown type: %d\n", evt.EType)
 			}
 		case data := <-ts.writeMsg:
 			// server发送的消息将发送给client和所有hooker

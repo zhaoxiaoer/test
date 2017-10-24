@@ -9,7 +9,7 @@ import (
 type BConn struct {
 	conn      net.Conn
 	name      string
-	msg       chan event
+	msg       chan Event
 	writeChan chan []byte
 	exitChan  chan struct{}
 	rlQuit    chan struct{}
@@ -17,7 +17,7 @@ type BConn struct {
 	closeOnce sync.Once
 }
 
-func NewBConn(conn net.Conn, name string, messages chan event) *BConn {
+func NewBConn(conn net.Conn, name string, messages chan Event) *BConn {
 	return &BConn{
 		conn:      conn,
 		name:      name,
@@ -61,7 +61,7 @@ func (bc *BConn) readLoop() {
 
 		//		bc.callback.OnMessage(bc, buf[:n])
 		//		obd.events <- "收到数据"
-		bc.msg <- event{1, bc.name, buf[:n]}
+		bc.msg <- Event{1, bc.name, buf[:n]}
 	}
 }
 
@@ -132,7 +132,7 @@ func (bc *BConn) Write(b []byte) (err error) {
 		return fmt.Errorf("writeChan is full")
 	}
 
-	return nil
+	return
 }
 
 func (bc *BConn) IsClosed() bool {
