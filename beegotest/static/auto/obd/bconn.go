@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 type BConn struct {
@@ -125,11 +126,16 @@ func (bc *BConn) Write(b []byte) (err error) {
 		}
 	}()
 
+	timer := time.NewTimer(10 * time.Millisecond)
+	defer timer.Stop()
+
 	select {
 	case bc.writeChan <- b:
 		return nil
-	default:
-		return fmt.Errorf("writeChan is full")
+	case <-timer.C:
+		fmt.Errorf("write timeout")
+		//	default:
+		//		return fmt.Errorf("writeChan is full")
 	}
 
 	return

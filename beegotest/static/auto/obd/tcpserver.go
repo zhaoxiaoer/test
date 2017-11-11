@@ -144,10 +144,15 @@ func (ts *TCPServer) accept() {
 func (ts *TCPServer) connManage() {
 	bcs := make(map[*BConn]string)
 
+	timer := time.NewTimer(1 * time.Millisecond)
+	defer timer.Stop()
+
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
+		timer.Reset(1 * time.Millisecond)
+
 		select {
 		case conn, ok := <-ts.connAdd:
 			if !ok {
@@ -266,16 +271,23 @@ func (ts *TCPServer) connManage() {
 				ts.sendEvent(Event{2, "client未连接", nil})
 			}
 
-		default:
+			//		default:
+		case <-timer.C:
+			time.Sleep(1 * time.Millisecond)
 		}
 	}
 }
 
 func (ts *TCPServer) sendEvent(evt Event) error {
+	timer := time.NewTimer(10 * time.Millisecond)
+	defer timer.Stop()
+
 	select {
 	case ts.OutEvents <- evt:
 		return nil
-	default:
-		return fmt.Errorf("event can not be sent, Type: %d, Desc: %s", evt.EType, evt.EDesc)
+	case <-timer.C:
+		return fmt.Errorf("timeout, event can not be sent, Type: %d, Desc: %s", evt.EType, evt.EDesc)
+		//	default:
+		//		return fmt.Errorf("event can not be sent, Type: %d, Desc: %s", evt.EType, evt.EDesc)
 	}
 }

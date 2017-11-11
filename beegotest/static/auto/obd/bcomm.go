@@ -226,7 +226,7 @@ func (bcomm *BComm) recvACK(length int) error {
 		case <-timer.C:
 			return fmt.Errorf("timeout")
 		case l, _ := <-bcomm.rAck:
-			fmt.Printf("l: %d\n", l)
+			//			fmt.Printf("l: %d\n", l)
 			if l == length {
 				return nil
 			}

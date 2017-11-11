@@ -39,9 +39,9 @@ func TestRecvAck(t *testing.T) {
 	bcomm := NewBComm()
 
 	go func() {
-		for i := 0; i < 100000; i++ {
-			bcomm.Decode([]byte{0xAD, 0x00, 0x04, 0x00, 0x00, 0x00, 0x03, 0xB4})
-		}
+		//		for i := 0; i < 100000; i++ {
+		bcomm.Decode([]byte{0xAD, 0x00, 0x04, 0x00, 0x00, 0x00, 0x03, 0xB4})
+		//		}
 	}()
 
 	err := bcomm.recvACK(3)
