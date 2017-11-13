@@ -46,7 +46,7 @@
 		conn.onopen = function() {
 			log('Connected.');
 			updateUi();
-			conn.send("title")
+			conn.send($(document).attr("title"))
 		};
 
 		conn.onmessage = function(e) {
