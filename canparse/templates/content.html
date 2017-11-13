@@ -1,0 +1,9 @@
+{{define "content"}}
+<form action="/index" method="post" enctype="multipart/form-data">
+<input type="file" name="uploaded">
+<input type="submit" name="上传">
+</form>
+{{range .}}
+<a href="http://127.0.0.1:8080/fileinfo?file={{.Name}}">{{.Name}} 最后修改时间: {{.ModTime.Format "2006-01-02 15:03:04"}}</a><br>
+{{end}}
+{{end}}
