@@ -63,6 +63,9 @@ func wsServer(ws *websocket.Conn) {
 
 func main() {
 	mux := http.NewServeMux()
+	files := http.FileServer(http.Dir("public"))
+	mux.Handle("/public/", http.StripPrefix("/public/", files))
+	//mux.Handle("/public/", files)
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/fileinfo", fileInfo)
 	mux.Handle("/wsserver", websocket.Handler(wsServer))
