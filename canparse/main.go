@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	//	"bufio"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -9,11 +9,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+	//	"strings"
 	"time"
 
 	"golang.org/x/net/websocket"
 )
+
+type CanInfo struct {
+	It  int8 // info type
+	Val int32
+}
 
 func connState(c net.Conn, cs http.ConnState) {
 	fmt.Printf("c: %v, state: %v\n", c.RemoteAddr().String(), cs)
@@ -67,25 +72,34 @@ func wsServer(ws *websocket.Conn) {
 	fmt.Printf("n: %d\n", n)
 
 	filename := "canfiles" + "/" + string(buf[:n])
-	fmt.Printf("1len: %d", len([]byte(strings.Replace(filename, " ", "", -1))))
-	fmt.Printf("2len: %d", len([]byte("canfiles/Trace1.trc")))
-	fmt.Printf("name: %s\n", filename)
 	f, err := os.Open(filename)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		ws.Write([]byte("Can not open the file!"))
 		return
 	}
 	defer f.Close()
 
-	r := bufio.NewReader(f)
-	for {
-		s, err := r.ReadString('\n')
-		ws.Write([]byte(s))
+	//r := bufio.NewReader(f)
+	//	for {
+	//		s, err := r.ReadString('\n')
+	//		ws.Write([]byte(s))
+	//		if err != nil {
+	//			return
+	//		}
+	//		time.Sleep(1 * time.Millisecond)
+	//	}
+	for i := 0; i < 10000; i++ {
+		var data CanInfo
+		if i%2 == 0 {
+			data = CanInfo{1, int32(i)}
+		} else {
+			data = CanInfo{2, int32(i)}
+		}
+		err := websocket.JSON.Send(ws, data)
 		if err != nil {
 			return
 		}
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
