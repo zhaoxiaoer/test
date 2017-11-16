@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -55,17 +58,41 @@ func fileInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func wsServer(ws *websocket.Conn) {
-	fmt.Printf("22222222\n")
 	buf := make([]byte, 1024)
-	ws.Read(buf)
-	ws.Write(buf)
+	n, err := ws.Read(buf)
+	if err != nil {
+		ws.Write([]byte("Can not read the file name!"))
+		return
+	}
+	fmt.Printf("n: %d\n", n)
+
+	filename := "canfiles" + "/" + string(buf[:n])
+	fmt.Printf("1len: %d", len([]byte(strings.Replace(filename, " ", "", -1))))
+	fmt.Printf("2len: %d", len([]byte("canfiles/Trace1.trc")))
+	fmt.Printf("name: %s\n", filename)
+	f, err := os.Open(filename)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		ws.Write([]byte("Can not open the file!"))
+		return
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	for {
+		s, err := r.ReadString('\n')
+		ws.Write([]byte(s))
+		if err != nil {
+			return
+		}
+		time.Sleep(1 * time.Millisecond)
+	}
 }
 
 func main() {
 	mux := http.NewServeMux()
 	files := http.FileServer(http.Dir("public"))
 	mux.Handle("/public/", http.StripPrefix("/public/", files))
-	//mux.Handle("/public/", files)
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/fileinfo", fileInfo)
 	mux.Handle("/wsserver", websocket.Handler(wsServer))

@@ -9,7 +9,9 @@
 
 		function log(msg) {
 			var control = $('#log');
-			control.html(control.html() + msg + '<br/>');
+			//control.html(control.html() + msg + '<br/>');
+			//control.scrollTop(control.scrollTop() + 1000);
+			control.html(msg + '<br/>');
 			control.scrollTop(control.scrollTop() + 1000);
 		}
 
@@ -46,7 +48,7 @@
 		conn.onopen = function() {
 			log('Connected.');
 			updateUi();
-			conn.send($(document).attr("title"))
+			conn.send($('#filename').text())
 		};
 
 		conn.onmessage = function(e) {
@@ -62,10 +64,10 @@
 		$('#message').val('').focus();
     });
 	</script>
-	<title>Sockjs-go chat</title>
+	<title>报文解析</title>
   </head>
   <body>
-	<h1>go chat</h1>
+	<h1 id="filename">{{.}}</h1>
 
 	<div>
 	  Status: <span id="status">disconnected</span>
