@@ -9,15 +9,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	//	"strings"
-	"time"
+	"regexp"
+	"strconv"
 
 	"golang.org/x/net/websocket"
 )
 
-type CanInfo struct {
-	It  int8 // info type
-	Val int32
+type CanMsg struct {
+	To  int64 // Time Offset
+	CID int64 // Can ID
+	Val int64
 }
 
 func connState(c net.Conn, cs http.ConnState) {
@@ -71,32 +72,30 @@ func wsServer(conn *websocket.Conn) {
 	defer f.Close()
 
 	br := bufio.NewReader(f)
-	var i int = 0
 	for {
 		s, err := br.ReadString('\n')
-		conn.Write([]byte(s))
+
+		re := regexp.MustCompile(`\d+\)\s+(\d+).(\d{3})\s+\d\s+Rx\s+([[:xdigit:]]{4})\s+-\s+8\s+([[:xdigit:]]{2})\s([[:xdigit:]]{2})\s([[:xdigit:]]{2})\s([[:xdigit:]]{2})\s([[:xdigit:]]{2})\s([[:xdigit:]]{2})\s([[:xdigit:]]{2})\s([[:xdigit:]]{2})`)
+		//		fmt.Printf("%q\n", re.FindStringSubmatch(s))
+		ss := re.FindStringSubmatch(s)
+		if len(ss) == 12 {
+			to, err0 := strconv.ParseInt(ss[1]+ss[2], 10, 64)
+			cid, err1 := strconv.ParseInt(ss[3], 16, 64)
+			v, err2 := strconv.ParseInt(ss[4], 16, 64)
+			if err0 == nil && err1 == nil && err2 == nil {
+				fmt.Printf("to: %v, cid: %v, v: %v\n", to, cid, v)
+				d := CanMsg{to, cid, v}
+				err := websocket.JSON.Send(conn, d)
+				if err != nil {
+					return
+				}
+			}
+		}
+
 		if err != nil {
 			return
 		}
-		time.Sleep(1 * time.Millisecond)
-		i++
-		if i > 300 {
-			break
-		}
 	}
-	//	for i := 0; i < 10000; i++ {
-	//		var data CanInfo
-	//		if i%2 == 0 {
-	//			data = CanInfo{1, int32(i)}
-	//		} else {
-	//			data = CanInfo{2, int32(i)}
-	//		}
-	//		err := websocket.JSON.Send(conn, data)
-	//		if err != nil {
-	//			return
-	//		}
-	//		time.Sleep(1000 * time.Millisecond)
-	//	}
 }
 
 func main() {
