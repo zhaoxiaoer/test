@@ -1,7 +1,7 @@
 package main
 
 import (
-	//	"bufio"
+	"bufio"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -57,50 +57,46 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func fileInfo(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("file: %s\n", r.FormValue("file"))
 	tpls := template.Must(template.ParseFiles("templates/wsserver.html"))
 	tpls.ExecuteTemplate(w, "wsserver", r.FormValue("file"))
 }
 
-func wsServer(ws *websocket.Conn) {
-	buf := make([]byte, 1024)
-	n, err := ws.Read(buf)
+func wsServer(conn *websocket.Conn) {
+	r := conn.Request()
+	f, err := os.Open("canfiles/" + r.FormValue("file"))
 	if err != nil {
-		ws.Write([]byte("Can not read the file name!"))
-		return
-	}
-	fmt.Printf("n: %d\n", n)
-
-	filename := "canfiles" + "/" + string(buf[:n])
-	f, err := os.Open(filename)
-	if err != nil {
-		ws.Write([]byte("Can not open the file!"))
+		conn.Write([]byte("Can not open the file!"))
 		return
 	}
 	defer f.Close()
 
-	//r := bufio.NewReader(f)
-	//	for {
-	//		s, err := r.ReadString('\n')
-	//		ws.Write([]byte(s))
-	//		if err != nil {
-	//			return
-	//		}
-	//		time.Sleep(1 * time.Millisecond)
-	//	}
-	for i := 0; i < 10000; i++ {
-		var data CanInfo
-		if i%2 == 0 {
-			data = CanInfo{1, int32(i)}
-		} else {
-			data = CanInfo{2, int32(i)}
-		}
-		err := websocket.JSON.Send(ws, data)
+	br := bufio.NewReader(f)
+	var i int = 0
+	for {
+		s, err := br.ReadString('\n')
+		conn.Write([]byte(s))
 		if err != nil {
 			return
 		}
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
+		i++
+		if i > 300 {
+			break
+		}
 	}
+	//	for i := 0; i < 10000; i++ {
+	//		var data CanInfo
+	//		if i%2 == 0 {
+	//			data = CanInfo{1, int32(i)}
+	//		} else {
+	//			data = CanInfo{2, int32(i)}
+	//		}
+	//		err := websocket.JSON.Send(conn, data)
+	//		if err != nil {
+	//			return
+	//		}
+	//		time.Sleep(1000 * time.Millisecond)
+	//	}
 }
 
 func main() {
