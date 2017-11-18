@@ -16,12 +16,6 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type CanMsg struct {
-	To  int64 // Time Offset
-	CID int64 // Can ID
-	Val int64
-}
-
 func connState(c net.Conn, cs http.ConnState) {
 	fmt.Printf("c: %v, state: %v\n", c.RemoteAddr().String(), cs)
 }
@@ -80,17 +74,27 @@ func wsServer(conn *websocket.Conn) {
 		//		fmt.Printf("%q\n", re.FindStringSubmatch(s))
 		ss := re.FindStringSubmatch(s)
 		if len(ss) == 12 {
-			to, err0 := strconv.ParseInt(ss[1]+ss[2], 10, 64)
-			cid, err1 := strconv.ParseInt(ss[3], 16, 64)
-			v, err2 := strconv.ParseInt(ss[4], 16, 64)
-			if err0 == nil && err1 == nil && err2 == nil {
-				fmt.Printf("to: %v, cid: %v, v: %v\n", to, cid, v)
-				d := CanMsg{to, cid, v}
-				err := websocket.JSON.Send(conn, d)
-				if err != nil {
-					return
+			to, toErr := strconv.ParseInt(ss[1]+ss[2], 10, 64)
+			cid, cidErr := strconv.ParseInt(ss[3], 16, 64)
+			v0, err0 := strconv.ParseInt(ss[4], 16, 64)
+			v1, _ := strconv.ParseInt(ss[5], 16, 64)
+			v2, _ := strconv.ParseInt(ss[6], 16, 64)
+			v3, _ := strconv.ParseInt(ss[7], 16, 64)
+			v4, _ := strconv.ParseInt(ss[8], 16, 64)
+			v5, _ := strconv.ParseInt(ss[9], 16, 64)
+			v6, _ := strconv.ParseInt(ss[10], 16, 64)
+			v7, _ := strconv.ParseInt(ss[11], 16, 64)
+			if toErr == nil && cidErr == nil && err0 == nil {
+				var d [8]uint8 = [8]uint8{uint8(v0), uint8(v1), uint8(v2), uint8(v3), uint8(v4), uint8(v5), uint8(v6), uint8(v7)}
+				cd := CanData{uint64(to), uint32(cid), d}
+				i, err := cd.Decode()
+				if err == nil {
+					err := websocket.JSON.Send(conn, i)
+					if err != nil {
+						return
+					}
+					time.Sleep(1000 * time.Millisecond)
 				}
-				time.Sleep(1000 * time.Millisecond)
 			}
 		}
 
@@ -98,6 +102,32 @@ func wsServer(conn *websocket.Conn) {
 			return
 		}
 	}
+}
+
+// CAN数据解析
+type BMS100 struct {
+	CID   uint32  // CAN ID
+	PackU float64 // 电池电压
+}
+
+type CanData struct {
+	To  uint64 // Time Offset
+	CID uint32 // Can ID
+	Val [8]uint8
+}
+
+func (cd *CanData) Decode() (interface{}, error) {
+	if cd.CID == 0x100 {
+		var pU uint16 = uint16(cd.Val[1])
+		pU <<= 8
+		pU |= uint16(cd.Val[0])
+		fmt.Printf("packU: 0x%04X\n", pU)
+		packU := float64(pU) * 0.1
+		bms100 := BMS100{0x100, packU}
+		return bms100, nil
+	}
+
+	return nil, fmt.Errorf("Unknown CAN ID: 0x%04X", cd.CID)
 }
 
 func main() {
