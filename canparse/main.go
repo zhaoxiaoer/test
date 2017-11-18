@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"time"
+	//"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -94,7 +94,7 @@ func wsServer(conn *websocket.Conn) {
 					if err != nil {
 						return
 					}
-					time.Sleep(1000 * time.Millisecond)
+					//time.Sleep(1000 * time.Millisecond)
 				}
 			}
 		}
