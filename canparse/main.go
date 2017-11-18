@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -122,8 +123,11 @@ func (cd *CanData) Decode() (interface{}, error) {
 		var pU uint16 = uint16(cd.Val[1])
 		pU <<= 8
 		pU |= uint16(cd.Val[0])
-		fmt.Printf("packU: 0x%04X\n", pU)
+		//fmt.Printf("packU: 0x%04X\n", pU)
 		packU := float64(pU) * 0.1
+		// float64保留小数点后1位
+		pow10_1 := math.Pow10(1)
+		packU = math.Trunc((packU+0.5/pow10_1)*pow10_1) / pow10_1
 		bms100 := BMS100{0x100, cd.To, packU}
 		return bms100, nil
 	}
