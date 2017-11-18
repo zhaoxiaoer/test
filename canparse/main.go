@@ -107,6 +107,7 @@ func wsServer(conn *websocket.Conn) {
 // CAN数据解析
 type BMS100 struct {
 	CID   uint32  // CAN ID
+	To    uint64  // Time Offset
 	PackU float64 // 电池电压
 }
 
@@ -123,7 +124,7 @@ func (cd *CanData) Decode() (interface{}, error) {
 		pU |= uint16(cd.Val[0])
 		fmt.Printf("packU: 0x%04X\n", pU)
 		packU := float64(pU) * 0.1
-		bms100 := BMS100{0x100, packU}
+		bms100 := BMS100{0x100, cd.To, packU}
 		return bms100, nil
 	}
 
