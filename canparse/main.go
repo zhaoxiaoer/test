@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -102,6 +103,7 @@ func wsServer(conn *websocket.Conn) {
 					if err != nil {
 						return
 					}
+					time.Sleep(1 * time.Second)
 				}
 			}
 		}
@@ -150,7 +152,7 @@ func (n *Numeric) Decode(d [8]byte) (float64, error) {
 
 	for i := 0; i < n.NumOB; i++ {
 		r <<= 8
-		r |= uint32(d[n.ByteSPos+n.NumOB-1-i])
+		r |= uint32(d[n.ByteSPos+i])
 	}
 
 	r_f := float64(r) * n.ScalFac
@@ -169,10 +171,17 @@ type BMS100 struct {
 	PackI float64 // 电池电流
 }
 
+type VCUP151 struct {
+	DID   uint32
+	To    uint64
+	Speed float64 // Vehicle Speed
+}
+
 func Parse(to uint64, did uint32, d [8]byte) (interface{}, error) {
 	if did == 0x100 {
 		u, _ := (&Numeric{2, 0, 0.1, 0, false, 0, 0, 0, 0, "V", 1}).Decode(d)
 		i, _ := (&Numeric{2, 2, 0.1, -500, false, 0, 0, 0, 0, "A", 1}).Decode(d)
+		fmt.Printf("u: %v, i: %v\n", u, i)
 		bms100 := BMS100{
 			DID:   did,
 			To:    to,
@@ -180,6 +189,15 @@ func Parse(to uint64, did uint32, d [8]byte) (interface{}, error) {
 			PackI: i,
 		}
 		return bms100, nil
+	} else if did == 0x151 {
+		speed, _ := (&Numeric{2, 0, 0.1, 0, false, 0, 0, 0, 0, "KPH", 1}).Decode(d)
+		fmt.Printf("speed: %v\n", speed)
+		vcup151 := VCUP151{
+			DID:   did,
+			To:    to,
+			Speed: speed,
+		}
+		return vcup151, nil
 	}
 	return nil, fmt.Errorf("Unknown did: 0x%04X", did)
 }
