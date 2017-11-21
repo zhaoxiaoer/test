@@ -4,6 +4,6 @@
 <input type="submit" name="上传">
 </form>
 {{range .}}
-<a href="http://192.168.1.7:8080/fileinfo?file={{.Name}}">{{.Name}} 最后修改时间: {{.ModTime.Format "2006-01-02 15:03:04"}}</a><br>
+<a href="http://localhost:8080/fileinfo?file={{.Name}}">{{.Name}} 最后修改时间: {{.ModTime.Format "2006-01-02 15:03:04"}}</a><br>
 {{end}}
 {{end}}

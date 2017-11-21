@@ -37,7 +37,7 @@
 			return false;
 		});
 		log('host: ' + window.location.host);
-		conn = new WebSocket("ws://192.168.1.7:8080/wsserver?file={{.}}");
+		conn = new WebSocket("ws://localhost:8080/wsserver?file={{.}}");
 		log('Connecting...');
 		conn.onopen = function() {
 			log('Connected.');
@@ -46,9 +46,8 @@
 		};
 		conn.onmessage = function(e) {
 			log(e.data);
-			//CID 288
 			var myObject = JSON.parse(e.data); 
-			if(myObject.CID == 256){
+			if(myObject.DID == 256){
 			     addPackU(myObject.To, myObject.PackU);
 			     addPackI(myObject.To, myObject.PackI);
 				

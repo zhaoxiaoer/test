@@ -12,10 +12,19 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	//"time"
 
 	"golang.org/x/net/websocket"
 )
+
+type ContParam struct {
+	Host string
+	Fis  []os.FileInfo
+}
+
+type WsParam struct {
+	Host string
+	File string
+}
 
 func connState(c net.Conn, cs http.ConnState) {
 	fmt.Printf("c: %v, state: %v\n", c.RemoteAddr().String(), cs)
@@ -76,7 +85,7 @@ func wsServer(conn *websocket.Conn) {
 		ss := re.FindStringSubmatch(s)
 		if len(ss) == 12 {
 			to, toErr := strconv.ParseInt(ss[1]+ss[2], 10, 64)
-			cid, cidErr := strconv.ParseInt(ss[3], 16, 64)
+			did, didErr := strconv.ParseInt(ss[3], 16, 64)
 			v0, err0 := strconv.ParseInt(ss[4], 16, 64)
 			v1, _ := strconv.ParseInt(ss[5], 16, 64)
 			v2, _ := strconv.ParseInt(ss[6], 16, 64)
@@ -85,16 +94,14 @@ func wsServer(conn *websocket.Conn) {
 			v5, _ := strconv.ParseInt(ss[9], 16, 64)
 			v6, _ := strconv.ParseInt(ss[10], 16, 64)
 			v7, _ := strconv.ParseInt(ss[11], 16, 64)
-			if toErr == nil && cidErr == nil && err0 == nil {
+			if toErr == nil && didErr == nil && err0 == nil {
 				var d [8]uint8 = [8]uint8{uint8(v0), uint8(v1), uint8(v2), uint8(v3), uint8(v4), uint8(v5), uint8(v6), uint8(v7)}
-				cd := CanData{uint64(to), uint32(cid), d}
-				i, err := cd.Decode()
+				i, err := Parse(uint64(to), uint32(did), d)
 				if err == nil {
 					err := websocket.JSON.Send(conn, i)
 					if err != nil {
 						return
 					}
-					//time.Sleep(1000 * time.Millisecond)
 				}
 			}
 		}
@@ -103,44 +110,6 @@ func wsServer(conn *websocket.Conn) {
 			return
 		}
 	}
-}
-
-// CAN数据解析
-type BMS100 struct {
-	CID   uint32  // CAN ID
-	To    uint64  // Time Offset
-	PackU float64 // 电池电压
-	PackI float64 // 电池电流
-}
-
-type CanData struct {
-	To  uint64 // Time Offset
-	CID uint32 // Can ID
-	Val [8]uint8
-}
-
-func (cd *CanData) Decode() (interface{}, error) {
-	if cd.CID == 0x100 {
-		var pU uint16 = uint16(cd.Val[1])
-		pU <<= 8
-		pU |= uint16(cd.Val[0])
-		//fmt.Printf("packU: 0x%04X\n", pU)
-		packU := float64(pU) * 0.1
-		// float64保留小数点后1位
-		pow10_1 := math.Pow10(1)
-		packU = math.Trunc((packU+0.5/pow10_1)*pow10_1) / pow10_1
-
-		var pI uint16 = uint16(cd.Val[3])
-		pI <<= 8
-		pI |= uint16(cd.Val[2])
-		packI := float64(pI)*0.1 - 500
-		packI = math.Trunc((packI+0.5/pow10_1)*pow10_1) / pow10_1
-
-		bms100 := BMS100{0x100, cd.To, packU, packI}
-		return bms100, nil
-	}
-
-	return nil, fmt.Errorf("Unknown CAN ID: 0x%04X", cd.CID)
 }
 
 func main() {
@@ -159,4 +128,58 @@ func main() {
 
 	server.ListenAndServe()
 	//server.ListenAndServeTLS("cert.pem", "key.pem")
+}
+
+// CAN数据解析
+type Numeric struct {
+	NumOB      int     // Number Of Bytes
+	ByteSPos   int     // ByteStart Position
+	ScalFac    float64 // Scaling Factor
+	ScalOffset float64 // Scaling Offset
+	Signed     bool
+	Amin       float64 // Absolute Min
+	Amax       float64 // Absolute Max
+	Omin       float64 // Operating Min
+	Omax       float64 // Operating Max
+	Units      string
+	Trunc      int // 截取小数点后几位
+}
+
+func (n *Numeric) Decode(d [8]byte) (float64, error) {
+	var r uint32
+
+	for i := 0; i < n.NumOB; i++ {
+		r <<= 8
+		r |= uint32(d[n.ByteSPos+n.NumOB-1-i])
+	}
+
+	r_f := float64(r) * n.ScalFac
+	r_f += n.ScalOffset
+
+	pow10_t := math.Pow10(n.Trunc)
+	r_f = math.Trunc((r_f+0.5/pow10_t)*pow10_t) / pow10_t
+
+	return r_f, nil
+}
+
+type BMS100 struct {
+	DID   uint32  // CAN ID
+	To    uint64  // Time Offset
+	PackU float64 // 电池电压
+	PackI float64 // 电池电流
+}
+
+func Parse(to uint64, did uint32, d [8]byte) (interface{}, error) {
+	if did == 0x100 {
+		u, _ := (&Numeric{2, 0, 0.1, 0, false, 0, 0, 0, 0, "V", 1}).Decode(d)
+		i, _ := (&Numeric{2, 2, 0.1, -500, false, 0, 0, 0, 0, "A", 1}).Decode(d)
+		bms100 := BMS100{
+			DID:   did,
+			To:    to,
+			PackU: u,
+			PackI: i,
+		}
+		return bms100, nil
+	}
+	return nil, fmt.Errorf("Unknown did: 0x%04X", did)
 }
