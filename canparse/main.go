@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"time"
+	//	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -103,7 +103,7 @@ func wsServer(conn *websocket.Conn) {
 					if err != nil {
 						return
 					}
-					time.Sleep(1 * time.Second)
+					//					time.Sleep(1 * time.Second)
 				}
 			}
 		}
@@ -134,8 +134,9 @@ func main() {
 
 // CAN数据解析
 type Numeric struct {
-	NumOB      int     // Number Of Bytes
-	ByteSPos   int     // ByteStart Position
+	ByteSPos   int     // Byte Start Position
+	BitSPos    int     // Bit Start Position
+	BitLen     int     // Bit Length
 	ScalFac    float64 // Scaling Factor
 	ScalOffset float64 // Scaling Offset
 	Signed     bool
@@ -148,12 +149,29 @@ type Numeric struct {
 }
 
 func (n *Numeric) Decode(d [8]byte) (float64, error) {
-	var r uint32
+	var r uint64
+	var m uint64 = 0xFFFFFFFFFFFFFFFF
 
-	for i := 0; i < n.NumOB; i++ {
-		r <<= 8
-		r |= uint32(d[n.ByteSPos+i])
+	var numOB int
+	var remainder int
+	var bitORS uint
+	var maskBitORS uint64
+
+	numOB = (n.BitSPos + n.BitLen) / 8 // 总共需要的字节数
+	remainder = (n.BitSPos + n.BitLen) % 8
+	if remainder != 0 {
+		numOB += 1
+		bitORS = uint(8 - remainder) // Bits of right shift
 	}
+	maskBitORS = uint64(64 - n.BitLen) // 掩码需要右移的位数
+
+	for i := 0; i < numOB; i++ {
+		r <<= 8
+		r |= uint64(d[n.ByteSPos+i])
+	}
+	r >>= bitORS
+	m >>= maskBitORS
+	r &= m
 
 	r_f := float64(r) * n.ScalFac
 	r_f += n.ScalOffset
@@ -171,6 +189,12 @@ type BMS100 struct {
 	PackI float64 // 电池电流
 }
 
+type VCUP150 struct {
+	DID      uint32
+	To       uint64
+	TorqueRQ float64 // TM电机目标扭矩
+}
+
 type VCUP151 struct {
 	DID   uint32
 	To    uint64
@@ -179,8 +203,8 @@ type VCUP151 struct {
 
 func Parse(to uint64, did uint32, d [8]byte) (interface{}, error) {
 	if did == 0x100 {
-		u, _ := (&Numeric{2, 0, 0.1, 0, false, 0, 0, 0, 0, "V", 1}).Decode(d)
-		i, _ := (&Numeric{2, 2, 0.1, -500, false, 0, 0, 0, 0, "A", 1}).Decode(d)
+		u, _ := (&Numeric{0, 0, 16, 0.1, 0, false, 0, 0, 0, 0, "V", 1}).Decode(d)
+		i, _ := (&Numeric{2, 0, 16, 0.1, -500, false, 0, 0, 0, 0, "A", 1}).Decode(d)
 		fmt.Printf("u: %v, i: %v\n", u, i)
 		bms100 := BMS100{
 			DID:   did,
@@ -189,8 +213,17 @@ func Parse(to uint64, did uint32, d [8]byte) (interface{}, error) {
 			PackI: i,
 		}
 		return bms100, nil
+	} else if did == 0x150 {
+		torqueRQ, _ := (&Numeric{5, 1, 15, 0.05, 0, false, 0, 0, 0, 0, "KPH", 2}).Decode(d)
+		fmt.Printf("torqueRQ: %v\n", torqueRQ)
+		vcup150 := VCUP150{
+			DID:      did,
+			To:       to,
+			TorqueRQ: torqueRQ,
+		}
+		return vcup150, nil
 	} else if did == 0x151 {
-		speed, _ := (&Numeric{2, 0, 0.1, 0, false, 0, 0, 0, 0, "KPH", 1}).Decode(d)
+		speed, _ := (&Numeric{0, 0, 16, 0.1, 0, false, 0, 0, 0, 0, "KPH", 1}).Decode(d)
 		fmt.Printf("speed: %v\n", speed)
 		vcup151 := VCUP151{
 			DID:   did,
