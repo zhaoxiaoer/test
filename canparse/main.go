@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	//	"time"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -77,6 +77,7 @@ func wsServer(conn *websocket.Conn) {
 	}
 	defer f.Close()
 
+	//	var lastTo int64
 	br := bufio.NewReader(f)
 	for {
 		s, err := br.ReadString('\n')
@@ -103,7 +104,9 @@ func wsServer(conn *websocket.Conn) {
 					if err != nil {
 						return
 					}
-					//					time.Sleep(1 * time.Second)
+					//					time.Sleep(time.Duration(to-lastTo) / 1000 * time.Millisecond)
+					//					lastTo = to
+					time.Sleep(10 * time.Millisecond)
 				}
 			}
 		}
@@ -189,6 +192,12 @@ type BMS100 struct {
 	PackI float64 // 电池电流
 }
 
+type MCU120 struct {
+	DID       uint32  // CAN ID
+	To        uint64  // Time Offset
+	CtlTorque float64 // Controller Torque
+}
+
 type VCUP150 struct {
 	DID      uint32
 	To       uint64
@@ -213,8 +222,17 @@ func Parse(to uint64, did uint32, d [8]byte) (interface{}, error) {
 			PackI: i,
 		}
 		return bms100, nil
+	} else if did == 0x120 {
+		ctlTorque, _ := (&Numeric{4, 1, 15, 0.05, -300, false, 0, 0, 0, 0, "NM", 2}).Decode(d)
+		fmt.Printf("ctlTorque: %v\n", ctlTorque)
+		mcu120 := MCU120{
+			DID:       did,
+			To:        to,
+			CtlTorque: ctlTorque,
+		}
+		return mcu120, nil
 	} else if did == 0x150 {
-		torqueRQ, _ := (&Numeric{5, 1, 15, 0.05, 0, false, 0, 0, 0, 0, "KPH", 2}).Decode(d)
+		torqueRQ, _ := (&Numeric{5, 1, 15, 0.05, 0, false, 0, 0, 0, 0, "NM", 2}).Decode(d)
 		fmt.Printf("torqueRQ: %v\n", torqueRQ)
 		vcup150 := VCUP150{
 			DID:      did,

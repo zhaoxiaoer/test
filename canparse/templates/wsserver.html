@@ -51,6 +51,12 @@
 			     addPackU(myObject.To, myObject.PackU);
 			     addPackI(myObject.To, myObject.PackI);
 				
+			} else if(myObject.DID == 288){
+				 addNowTorque(myObject.To, myObject.CtlTorque);
+			} else if(myObject.DID == 336){
+				 addExpectTorque(myObject.To, myObject.TorqueRQ);
+			} else if(myObject.DID == 337){
+				 addSpeed(myObject.To, myObject.Speed);
 			}
 		};
 		conn.onclose = function() {
@@ -83,14 +89,18 @@
 	  <input id="message" type="text" />
 	  <input type="submit" value="Send" />
 	</form>
-<div style="width:75%;">
+	<div style="width:75%;">
         <canvas id="canvas"></canvas>
-    </div>
-    <br>
+    </div><br>
     <div style="width:75%;">
         <canvas id="canvas2"></canvas>
-    </div>
-    <br>
+    </div><br>
+    <div style="width:75%;">
+        <canvas id="canvas3"></canvas>
+    </div><br>
+    <div style="width:75%;">
+        <canvas id="canvas4"></canvas>
+    </div><br>
      <br>
     <button id="randomizeData">Randomize Data</button>
     <button id="addDataset">Add Dataset</button>
@@ -119,7 +129,38 @@
                 window.myLine2.update();
             }
         };
+
+		function addSpeed(px, py) {
+            if (config3.data.datasets.length > 0) {
+                config3.data.labels.push(px/1000);
+                config3.data.datasets.forEach(function(dataset) {
+                    dataset.data.push(py);
+                });
+                window.myLine3.update();
+            }
+        };
+        var etEnd = 0;
+		var ntEnd = 0;
+        function addExpectTorque(px, py) {
+            if (config4.data.datasets.length > 0) {
+                config4.data.labels.push(px/1000);
+				config4.data.datasets[0].data.push(py);
+				config4.data.datasets[1].data.push(ntEnd);
+				etEnd = py;
+                window.myLine4.update();
+            }
+        };
         
+        function addNowTorque(px, py) {
+          	if (config4.data.datasets.length > 0) {
+                config4.data.labels.push(px/1000);
+				config4.data.datasets[1].data.push(py);
+				config4.data.datasets[0].data.push(etEnd);
+				ntEnd = py;
+                window.myLine4.update();
+            }
+        };
+
         var config = {
             type: 'line',
             data: {
@@ -138,7 +179,7 @@
                 responsive: true,
                 title:{
                     display:true,
-                    text:'Chart.js Line Chart'
+                    text:''
                 },
                 tooltips: {
                     mode: 'index',
@@ -172,6 +213,7 @@
                 }
             }
         };
+
 	var config2 = {
             type: 'line',
             data: {
@@ -215,22 +257,140 @@
                             labelString: 'Value'
                         },
                         ticks: {
-                            min: 0,
-                            max: 500,
+                            min: -100,
+                            max: 200,
                             // forces step size to be 5 units
-                            stepSize: 100
+                            stepSize: 50
                         }
                     }]
                 }
             }
         };
+
+		var config3 = {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Car Speed",
+                    backgroundColor: window.chartColors.red,
+                    borderColor: window.chartColors.red,
+                    data: [
+                    
+                    ],
+                    fill: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                title:{
+                    display:true,
+                    text:''
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'unit: Km'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'unit: h'
+                        },
+                        ticks: {
+                            min: 0,
+                            max: 50,
+                            // forces step size to be 5 units
+                            stepSize: 10
+                        }
+                    }]
+                }
+            }
+        };
+        
+        var config4 = {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Expect Torque",
+                    backgroundColor: window.chartColors.red,
+                    borderColor: window.chartColors.red,
+                    data: [],
+                    fill: false,
+                },{
+                    label: "Now Torque",
+                    backgroundColor: window.chartColors.blue,
+                    borderColor: window.chartColors.blue,
+                    data: [],
+                    fill: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                title:{
+                    display:true,
+                    text:'Chart.js Line Chart'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Time'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Value'
+                        },
+                        ticks: {
+                            min: 0,
+                            max: 200,
+                            // forces step size to be 5 units
+                            stepSize: 40
+                        }
+                    }]
+                }
+            }
+        };
+        
         window.onload = function() {
             var ctx = document.getElementById("canvas").getContext("2d");
             window.myLine = new Chart(ctx, config);
             
             var ctx2 = document.getElementById("canvas2").getContext("2d");
             window.myLine2 = new Chart(ctx2, config2);
+            
+            var ctx3 = document.getElementById("canvas3").getContext("2d");
+            window.myLine3 = new Chart(ctx3, config3);
+            
+            var ctx4 = document.getElementById("canvas4").getContext("2d");
+            window.myLine4 = new Chart(ctx4, config4);
         };
+
         document.getElementById('randomizeData').addEventListener('click', function() {
             config.data.datasets.forEach(function(dataset) {
                 dataset.data = dataset.data.map(function() {
