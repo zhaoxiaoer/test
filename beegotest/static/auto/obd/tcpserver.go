@@ -23,7 +23,7 @@ type TCPServer struct {
 	hasInited bool
 
 	connAdd      chan net.Conn
-	cmQuit       chan bool
+	cmQuit       chan bool // 如果goroutine之间不需要通信，那么等待goroutine退出的另一种方式：sync.WaitGroup
 	events       chan Event
 	writeMsg     chan []byte // 写数据
 	getStatusMsg chan int    // 获取client连接状态
